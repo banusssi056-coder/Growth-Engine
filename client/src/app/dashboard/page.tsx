@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Board } from '@/components/kanban/Board';
 
 export default function Dashboard() {
-    const [deals, setDeals] = useState([]);
+    const [deals, setDeals] = useState<any[]>([]);
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {

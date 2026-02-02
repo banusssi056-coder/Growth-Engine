@@ -119,7 +119,7 @@ export function Board({ initialDeals }: BoardProps) {
         if (
             !activeContainer ||
             !overContainer ||
-            (activeContainer === overContainer && active.id === over.id)
+            (activeContainer === overContainer && active.id === over?.id)
         ) {
             setActiveId(null);
             return;

@@ -1,8 +1,10 @@
 'use client';
 import { BarChart3, Users, Briefcase, Settings, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils'; // Assuming cn utility; using relative path or placeholder
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
@@ -13,6 +15,21 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const [user, setUser] = useState<any>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        getUser();
+    }, []);
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        router.push('/login');
+    };
 
     return (
         <div className="flex h-full w-64 flex-col bg-slate-900 text-white">
@@ -37,7 +54,20 @@ export function Sidebar() {
                 </nav>
             </div>
             <div className="border-t border-slate-700 p-4">
-                <button className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white">
+                {user && (
+                    <div className="flex items-center mb-4 px-2">
+                        <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-sm font-bold text-white mr-3">
+                            {user.email?.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="overflow-hidden">
+                            <p className="text-sm font-medium text-white truncate">{user.email}</p>
+                        </div>
+                    </div>
+                )}
+                <button
+                    onClick={handleSignOut}
+                    className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white"
+                >
                     <LogOut className="mr-3 h-5 w-5" />
                     Sign Out
                 </button>

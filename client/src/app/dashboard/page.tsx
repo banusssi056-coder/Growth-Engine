@@ -1,37 +1,60 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Board } from '@/components/kanban/Board';
+import { supabase } from '../../lib/supabase';
 
 export default function Dashboard() {
     const [deals, setDeals] = useState<any[]>([]);
     const [stats, setStats] = useState<any>(null);
+    const router = useRouter();
 
     useEffect(() => {
-        // 1. Fetch Deals
-        fetch('http://localhost:5000/api/deals')
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                return res.json();
-            })
-            .then(data => {
-                if (Array.isArray(data)) {
-                    setDeals(data);
-                } else {
-                    console.error("Invalid deals response:", data);
-                    setDeals([]);
-                }
-            })
-            .catch(err => {
-                console.error("Failed to fetch deals:", err);
-                setDeals([]); // Graceful fallback
-            });
+        const checkAuthAndFetch = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
 
-        // 2. Fetch Stats
-        fetch('http://localhost:5000/api/dashboard/stats')
-            .then(res => res.json())
-            .then(data => setStats(data.summary))
-            .catch(err => console.error("Failed to fetch stats", err));
-    }, []);
+            if (!session) {
+                router.push('/login');
+                return;
+            }
+
+            const token = session.access_token;
+            const headers = {
+                'Authorization': `Bearer ${token}`
+            };
+
+            // 1. Fetch Deals
+            fetch('http://localhost:5000/api/deals', { headers })
+                .then(res => {
+                    if (res.status === 401 || res.status === 403) {
+                        router.push('/login');
+                        throw new Error("Unauthorized");
+                    }
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setDeals(data);
+                    } else {
+                        console.error("Invalid deals response:", data);
+                        setDeals([]);
+                    }
+                })
+                .catch(err => {
+                    console.error("Failed to fetch deals:", err);
+                    if (err.message !== "Unauthorized") setDeals([]);
+                });
+
+            // 2. Fetch Stats
+            fetch('http://localhost:5000/api/dashboard/stats', { headers })
+                .then(res => res.json())
+                .then(data => setStats(data.summary))
+                .catch(err => console.error("Failed to fetch stats", err));
+        };
+
+        checkAuthAndFetch();
+    }, [router]);
 
     return (
         <div className="h-full flex flex-col overflow-hidden bg-slate-100">

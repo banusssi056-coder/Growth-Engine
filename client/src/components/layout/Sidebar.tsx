@@ -18,12 +18,39 @@ export function Sidebar() {
     const [user, setUser] = useState<any>(null);
     const router = useRouter();
 
+    const fetchUser = async (session: any) => {
+        if (!session?.access_token) {
+            setUser(null);
+            return;
+        }
+        try {
+            // Use 127.0.0.1 to avoid IPv6 issues on Windows
+            const res = await fetch('http://127.0.0.1:5000/api/me', {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
+            if (res.ok) {
+                const fullUser = await res.json();
+                setUser(fullUser);
+            }
+        } catch (err) {
+            console.error("Error fetching user profile", err);
+        }
+    };
+
     useEffect(() => {
-        const getUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
-        };
-        getUser();
+        // Initial check
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            fetchUser(session);
+        });
+
+        // Listen for changes (Sign In / Sign Out)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            fetchUser(session);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const handleSignOut = async () => {
@@ -38,7 +65,10 @@ export function Sidebar() {
             </div>
             <div className="flex-1 py-6">
                 <nav className="space-y-1 px-3">
-                    {NAV_ITEMS.map((item) => (
+                    {NAV_ITEMS.filter(item => {
+                        if (item.label === 'Settings' && user?.role !== 'admin') return false;
+                        return true;
+                    }).map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}

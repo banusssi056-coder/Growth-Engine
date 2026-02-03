@@ -9,6 +9,7 @@ const { authenticate, authorize } = require('./middleware/auth');
 const logAudit = require('./middleware/audit');
 const { calculateScore } = require('./services/scoring'); // FR-D.2
 const trackingRoutes = require('./routes/tracking');      // FR-D.1
+const userRoutes = require('./routes/users');             // Admin User Mgmt
 const { renderTemplate } = require('./services/templates'); // FR-D.3
 
 // -- Configuration --
@@ -63,6 +64,12 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
+// Attach DB Pool to Request for Middleware access
+app.use((req, res, next) => {
+    req.db = pool;
+    next();
+});
+
 // Apply Custom Middleware
 app.use(authenticate); // Simulate extracting user
 app.use(logAudit(pool)); // Attach audit helper
@@ -80,6 +87,34 @@ app.post('/api/templates/preview', authorize(['admin', 'manager', 'rep']), async
 
 // -- Routes --
 app.use('/api/track', trackingRoutes(pool)); // Mount Pixel Tracking at /api/track/pixel/:id
+app.use('/api/users', userRoutes);           // Mount User Management
+
+// Admin Export API
+app.get('/api/export/deals', authorize(['admin']), async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT d.name, c.name as company, d.value, d.stage, d.probability, d.closing_date, u.email as owner
+            FROM deals d
+            LEFT JOIN companies c ON d.comp_id = c.comp_id
+            LEFT JOIN users u ON d.owner_id = u.user_id
+            ORDER BY d.created_at DESC
+        `);
+
+        // Convert to CSV
+        const fields = ['name', 'company', 'value', 'stage', 'probability', 'closing_date', 'owner'];
+        const csv = [
+            fields.join(','),
+            ...result.rows.map(row => fields.map(field => JSON.stringify(row[field] || '')).join(','))
+        ].join('\n');
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment('deals-export.csv');
+        res.send(csv);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // FR-D.2: Lead Scoring API
 app.get('/api/contacts/:id/score', authorize(['admin', 'manager', 'rep']), async (req, res) => {
@@ -104,6 +139,12 @@ app.get('/health', async (req, res) => {
         console.error(err);
         res.status(500).json({ status: 'error', message: 'Database connection failed' });
     }
+});
+
+// User Profile API
+app.get('/api/me', authenticate, async (req, res) => {
+    // req.user already contains { id, role, email } populated by auth middleware
+    res.json(req.user);
 });
 
 // FR-A.1: Companies API
@@ -174,13 +215,72 @@ app.get('/api/dashboard/stats', authorize(['admin', 'manager']), async (req, res
 // FR-B.1: Kanban Board APIs
 app.get('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     try {
-        const result = await pool.query(`
+        let query = `
       SELECT d.*, c.name as company_name 
       FROM deals d
       LEFT JOIN companies c ON d.comp_id = c.comp_id
-      ORDER BY d.updated_at DESC
-    `);
+    `;
+        const params = [];
+
+        // VALIDATION: RBAC Visibility
+        if (req.user.role === 'rep' || req.user.role === 'intern') {
+            query += ` WHERE d.owner_id = $1`;
+            params.push(req.user.id);
+        } else if (req.user.role === 'manager') {
+            // Manager sees OWN deals AND deals of direct reports
+            query += ` WHERE d.owner_id = $1 OR d.owner_id IN (SELECT user_id FROM users WHERE manager_id = $1)`;
+            params.push(req.user.id);
+        }
+        // Admin sees all (no clause)
+
+        query += ` ORDER BY d.updated_at DESC`;
+
+        const result = await pool.query(query, params);
         res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Manager Analytics API
+app.get('/api/analytics/team', authorize(['admin', 'manager']), async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                u.email as rep_name,
+                COUNT(d.deal_id) as total_deals,
+                SUM(d.value) as total_pipeline,
+                SUM(d.value * d.probability / 100) as weighted_forecast,
+                COUNT(CASE WHEN d.stage = 'Closed' THEN 1 END) as closed_deals
+            FROM users u
+            LEFT JOIN deals d ON u.user_id = d.owner_id
+            WHERE u.manager_id = $1 OR u.user_id = $1
+            GROUP BY u.user_id, u.email
+            ORDER BY total_pipeline DESC
+        `;
+        const result = await pool.query(query, [req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/deals', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+    const { name, comp_id, value, stage, probability, closing_date } = req.body;
+    try {
+        const result = await pool.query(
+            `INSERT INTO deals (name, comp_id, value, stage, probability, closing_date, owner_id) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            [name, comp_id, value, stage, probability, closing_date, req.user.id] // Assign current user
+        );
+        const newDeal = result.rows[0];
+
+        // Audit Log
+        await req.audit('CREATE', 'DEAL', newDeal.deal_id, null, newDeal);
+
+        res.status(201).json(newDeal);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
@@ -189,32 +289,50 @@ app.get('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (r
 
 app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, res) => {
     const { id } = req.params;
-    const { stage } = req.body; // Only allowing stage update for now for drag-and-drop
+    const { stage } = req.body;
 
     if (!stage) return res.status(400).json({ error: 'Stage is required' });
 
     try {
-        // 1. Fetch current deal for Optimistic Locking check (FR-B.3) - omitted for simple drag/drop demo, but good practice.
-        // 2. Update Deal
-        const result = await pool.query(
-            'UPDATE deals SET stage = $1, updated_at = NOW() WHERE deal_id = $2 RETURNING *',
-            [stage, id]
-        );
+        // 1. Fetch current deal to check ownership check (RBAC)
+        const currentRes = await pool.query('SELECT * FROM deals WHERE deal_id = $1', [id]);
+        if (currentRes.rows.length === 0) return res.status(404).json({ error: 'Deal not found' });
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Deal not found' });
+        const currentDeal = currentRes.rows[0];
+
+        // RBAC CHECK
+        if (req.user.role === 'rep' && currentDeal.owner_id !== req.user.id) {
+            return res.status(403).json({ error: 'You can only edit your own deals' });
         }
+
+        // 2. Update Deal
+        // Allow owner_id update if provided (Manager/Admin only)
+        let ownerUpdate = '';
+        const params = [stage, id];
+
+        if (req.body.owner_id && (req.user.role === 'admin' || req.user.role === 'manager')) {
+            ownerUpdate = ', owner_id = $3';
+            params.push(req.body.owner_id);
+        }
+
+        const result = await pool.query(
+            `UPDATE deals SET stage = $1, updated_at = NOW() ${ownerUpdate} WHERE deal_id = $2 RETURNING *`,
+            params
+        );
 
         const updatedDeal = result.rows[0];
 
         // 3. Log Activity (FR-B.1)
+        let logContent = `Deal moved to stage: ${stage} by ${req.user.email}`;
+        if (ownerUpdate) logContent += ` (Reassigned ownership)`;
+
         await pool.query(
             `INSERT INTO activities (deal_id, type, content) VALUES ($1, 'NOTE', $2)`,
-            [id, `Deal moved to stage: ${stage} by ${req.user.email}`]
+            [id, logContent]
         );
 
         // 4. Audit Log
-        await req.audit('UPDATE', 'DEAL', id, { stage: 'Previous' }, updatedDeal);
+        await req.audit('UPDATE', 'DEAL', id, { stage: currentDeal.stage }, updatedDeal);
 
         res.json(updatedDeal);
     } catch (err) {

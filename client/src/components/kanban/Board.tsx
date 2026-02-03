@@ -130,7 +130,7 @@ export function Board({ initialDeals }: BoardProps) {
             try {
                 // Optimistic update already happened in DragOver mostly, but let's confirm placement
                 // In a real app we would call API here
-                await fetch(`http://localhost:5000/api/deals/${active.id}`, {
+                await fetch(`http://127.0.0.1:5000/api/deals/${active.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ stage: overContainer }) // Target stage is the new container key

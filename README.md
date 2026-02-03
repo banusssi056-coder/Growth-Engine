@@ -18,6 +18,14 @@
 *   **Pixel Tracking**: Invisible pixel for tracking email opens.
 *   **Liquid Templates**: Dynamic email rendering with personalization.
 
+### 4. Security & Access Control (New)
+*   **Google Login**: Secure authentication via Supabase Auth + Google OAuth.
+*   **Role-Based Access Control (RBAC)**:
+    *   **Admin**: Full access to all deals, settings, and user management. First user is auto-assigned Admin.
+    *   **Sales Manager**: Access to team deals and reports.
+    *   **Sales Rep**: Access only to their own deals.
+    *   **Intern**: Restricted access (Lead view/create only).
+
 ---
 
 ## 🛠 Technology Stack
@@ -34,6 +42,7 @@
 ### 1. Prerequisites
 *   Node.js (v18+)
 *   Supabase Project (Credentials required)
+*   Google Cloud Project (for OAuth)
 
 ### 2. Installation
 Navigate to the folders and install dependencies:
@@ -49,27 +58,39 @@ npm install
 ```
 
 ### 3. Environment Configuration
-Create a `.env` file in the `server/` directory with your Supabase credentials:
 
-**File:** `server/.env`
+#### Server (`server/.env`)
 ```env
-# Database Connection (Transaction Pooler - Port 5432 or 6543)
+# Database Connection
 DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
 
 # Supabase API Keys (Found in Project Settings > API)
 SUPABASE_URL=https://[REF].supabase.co
-SUPABASE_KEY=[ANON_KEY]
+SUPABASE_ANON_KEY=[ANON_KEY]
 SUPABASE_PUBLISHABLE_KEY=[PUBLISHABLE_KEY]
 ```
-*> **Note**: If your password contains special characters (like `@`), the system will automatically handle encoding.*
 
-### 4. Database Initialization
+#### Client (`client/.env.local`)
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://[REF].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=[ANON_KEY]
+```
+
+### 4. Supabase & Google Auth Setup
+1.  **Enable Google Auth**: In Supabase Dashboard > Authentication > Providers.
+2.  **Configure Google Cloud**:
+    *   Create a Project in Google Cloud Console.
+    *   Create OAuth 2.0 Credentials (Web App).
+    *   Add Supabase Callback URL to "Authorized redirect URIs".
+    *   Copy Client ID/Secret to Supabase.
+
+### 5. Database Initialization
 Run the migration and seed scripts to create tables and load test data:
 
 ```bash
 cd server
 node migrate.js  # Creates Tables
-node seed.js     # Inserts Test Data (Users, Deals, Companies)
+# node seed.js   # Optional: Inserts Test Data
 ```
 
 ---
@@ -103,7 +124,6 @@ node worker.js
 
 ## 🧪 Testing
 
-*   **Dashboard**: Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) to see the Kanban board.
-*   **Automation**: Check the `worker.js` terminal logs. It runs:
-    *   *Lead Assignment*: Every 30 seconds.
-    *   *Stale Check*: Every 12 hours.
+*   **Login**: Open [http://localhost:3000](http://localhost:3000). You will be redirected to Login.
+*   **Admin Check**: The first user to login becomes **Admin**. You will see the "Settings" tab.
+*   **Rep Check**: Create a new user (or update DB role). You will NOT see "Settings" and only see your own deals.

@@ -24,7 +24,7 @@ export default function Dashboard() {
             };
 
             // 1. Fetch Deals
-            fetch('http://localhost:5000/api/deals', { headers })
+            fetch('http://127.0.0.1:5000/api/deals', { headers })
                 .then(res => {
                     if (res.status === 401 || res.status === 403) {
                         router.push('/login');
@@ -47,7 +47,7 @@ export default function Dashboard() {
                 });
 
             // 2. Fetch Stats
-            fetch('http://localhost:5000/api/dashboard/stats', { headers })
+            fetch('http://127.0.0.1:5000/api/dashboard/stats', { headers })
                 .then(res => res.json())
                 .then(data => setStats(data.summary))
                 .catch(err => console.error("Failed to fetch stats", err));

@@ -30,16 +30,19 @@
 
 ## 🛠 Technology Stack
 
-*   **Frontend**: Next.js 14+ (App Router), Tailwind CSS, Lucide Icons, `@dnd-kit`.
+*   **Frontend**: Next.js 14, React 18, Tailwind CSS 3.4.
 *   **Backend**: Node.js, Express.js.
 *   **Database**: Supabase (PostgreSQL).
 *   **Worker**: `node-cron` for background task scheduling.
+*   **Environment**: Optimized for cross-platform compatibility (Windows/Linux).
 
 ---
 
-## ⚙️ Quick Start (Run on New System)
+## ⚙️ Quick Start
 
-Follow these steps to set up the project on a new machine:
+### Prerequisites
+*   **Node.js**: Version **18.x** is required.
+*   **NPM**: Version 8.x or higher.
 
 ### 1. Clone & Install
 ```bash
@@ -73,7 +76,12 @@ You can start the Client and Server concurrently from the root:
 npm run dev
 ```
 
-*Note: If you encounter issues, you can run them in separate terminals as described below.*
+If you encounter compatibility issues or need a fresh start:
+```bash
+# Clean install (removes node_modules) and reinstall
+rm -rf node_modules client/node_modules server/node_modules
+npm run install-all
+```
 
 ---
 

@@ -27,11 +27,12 @@ interface Deal {
 
 interface BoardProps {
     initialDeals: Deal[];
+    userRole: string;
 }
 
 const STAGES = ['Lead', 'Meeting', 'Proposal', 'Closed'];
 
-export function Board({ initialDeals }: BoardProps) {
+export function Board({ initialDeals, userRole }: BoardProps) {
     const [items, setItems] = useState<Record<string, Deal[]>>({});
     const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -44,10 +45,18 @@ export function Board({ initialDeals }: BoardProps) {
         setItems(grouped);
     }, [initialDeals]);
 
+    // Disable sensors if Intern
+    const isDragEnabled = userRole !== 'intern';
+
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: isDragEnabled ? 8 : 999999, // Hacky but effective disable
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
+            keyboardCodes: isDragEnabled ? undefined : { start: [], cancel: [], end: [] },
         })
     );
 
@@ -130,7 +139,7 @@ export function Board({ initialDeals }: BoardProps) {
             try {
                 // Optimistic update already happened in DragOver mostly, but let's confirm placement
                 // In a real app we would call API here
-                await fetch(`http://127.0.0.1:5000/api/deals/${active.id}`, {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${active.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ stage: overContainer }) // Target stage is the new container key
@@ -163,6 +172,37 @@ export function Board({ initialDeals }: BoardProps) {
         setMounted(true);
     }, []);
 
+    // Log Activity State
+    const [loggingDealId, setLoggingDealId] = useState<string | null>(null);
+    const [activityType, setActivityType] = useState('NOTE');
+    const [activityContent, setActivityContent] = useState('');
+
+    const handleLogActivity = async () => {
+        if (!loggingDealId || !activityContent) return;
+
+        // Dynamic import to avoid SSR issues if needed, or just standard fetch
+        const { supabase } = await import('../../lib/supabase'); // Lazy load client
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session) {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/activities`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    deal_id: loggingDealId,
+                    type: activityType,
+                    content: activityContent
+                })
+            });
+            // Reset
+            setLoggingDealId(null);
+            setActivityContent('');
+        }
+    };
+
     if (!mounted) return null;
 
     return (
@@ -175,12 +215,19 @@ export function Board({ initialDeals }: BoardProps) {
         >
             <div className="flex h-full w-full gap-4 overflow-x-auto p-4">
                 {STAGES.map((stage) => (
-                    <Column
-                        key={stage}
-                        id={stage}
-                        title={stage}
-                        deals={items[stage] || []}
-                    />
+                    <div key={stage} className="flex h-full w-80 flex-col rounded-lg bg-slate-50 border border-slate-200">
+                        <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                            <h3 className="font-semibold text-slate-700">{stage}</h3>
+                            <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                                {items[stage]?.length || 0}
+                            </span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2">
+                            {(items[stage] || []).map((deal) => (
+                                <DealCard key={deal.deal_id} deal={deal} onLogActivity={setLoggingDealId} />
+                            ))}
+                        </div>
+                    </div>
                 ))}
             </div>
             <DragOverlay dropAnimation={dropAnimation}>
@@ -189,6 +236,52 @@ export function Board({ initialDeals }: BoardProps) {
                     return activeDeal ? <DealCard deal={activeDeal} /> : null;
                 })() : null}
             </DragOverlay>
+
+            {/* Log Activity Modal */}
+            {loggingDealId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                        <h2 className="mb-4 text-xl font-bold text-slate-900">Log Activity</h2>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-slate-700">Type</label>
+                            <select
+                                value={activityType}
+                                onChange={(e) => setActivityType(e.target.value)}
+                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            >
+                                <option value="NOTE">Note</option>
+                                <option value="CALL">Call</option>
+                                <option value="EMAIL">Email</option>
+                                <option value="MEETING">Meeting</option>
+                            </select>
+                        </div>
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-slate-700">Details</label>
+                            <textarea
+                                value={activityContent}
+                                onChange={(e) => setActivityContent(e.target.value)}
+                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                rows={3}
+                                placeholder="What happened?"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setLoggingDealId(null)}
+                                className="rounded-md px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleLogActivity}
+                                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                            >
+                                Save Log
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DndContext>
     );
 }

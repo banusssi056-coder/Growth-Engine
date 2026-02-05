@@ -20,7 +20,7 @@ export default function Settings() {
         if (!session) return;
 
         try {
-            const res = await fetch('http://127.0.0.1:5000/api/users', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, {
                 headers: { 'Authorization': `Bearer ${session.access_token}` }
             });
             if (res.ok) {
@@ -39,7 +39,7 @@ export default function Settings() {
         if (!session) return;
 
         try {
-            const res = await fetch(`http://127.0.0.1:5000/api/users/${userId}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export default function Settings() {
         if (!session) return;
 
         try {
-            const res = await fetch(`http://127.0.0.1:5000/api/users/${userId}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ export default function Settings() {
         if (!session) return;
 
         try {
-            const res = await fetch('http://127.0.0.1:5000/api/export/deals', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/export/deals`, {
                 headers: { 'Authorization': `Bearer ${session.access_token}` }
             });
 
@@ -169,7 +169,7 @@ export default function Settings() {
                                                 const { data: { session } } = await supabase.auth.getSession();
                                                 if (!session) return;
                                                 // Assuming API endpoint handles manager_id update
-                                                await fetch(`http://127.0.0.1:5000/api/users/${u.user_id}`, {
+                                                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${u.user_id}`, {
                                                     method: 'PATCH',
                                                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                                                     body: JSON.stringify({ manager_id: newManagerId })

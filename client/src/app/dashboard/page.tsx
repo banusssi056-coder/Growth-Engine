@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 export default function Dashboard() {
     const [deals, setDeals] = useState<any[]>([]);
     const [stats, setStats] = useState<any>(null);
+    const [userRole, setUserRole] = useState<string>('rep');
     const router = useRouter();
 
     useEffect(() => {
@@ -23,8 +24,14 @@ export default function Dashboard() {
                 'Authorization': `Bearer ${token}`
             };
 
+            // 0. Fetch User Role
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, { headers })
+                .then(res => res.json())
+                .then(user => setUserRole(user.role))
+                .catch(err => console.error("Failed to fetch user:", err));
+
             // 1. Fetch Deals
-            fetch('http://127.0.0.1:5000/api/deals', { headers })
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals`, { headers })
                 .then(res => {
                     if (res.status === 401 || res.status === 403) {
                         router.push('/login');
@@ -47,7 +54,7 @@ export default function Dashboard() {
                 });
 
             // 2. Fetch Stats
-            fetch('http://127.0.0.1:5000/api/dashboard/stats', { headers })
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/stats`, { headers })
                 .then(res => res.json())
                 .then(data => setStats(data.summary))
                 .catch(err => console.error("Failed to fetch stats", err));
@@ -82,7 +89,7 @@ export default function Dashboard() {
 
             {/* Kanban Board */}
             <main className="flex-1 overflow-hidden p-6">
-                <Board initialDeals={deals} />
+                <Board initialDeals={deals} userRole={userRole} />
             </main>
         </div>
     );

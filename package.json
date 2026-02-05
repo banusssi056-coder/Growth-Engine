@@ -1,0 +1,17 @@
+{
+  "name": "sssi-growth-engine-root",
+  "version": "1.0.0",
+  "description": "Root package to manage SSSI Growth Engine services",
+  "scripts": {
+    "start": "npm run services:up && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "services:up": "docker-compose up -d",
+    "services:stop": "docker-compose down",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

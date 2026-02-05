@@ -267,7 +267,8 @@ app.get('/api/analytics/team', authorize(['admin', 'manager']), async (req, res)
     }
 });
 
-app.post('/api/deals', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+// FR-A.3: Deals API
+app.post('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     const { name, comp_id, value, stage, probability, closing_date } = req.body;
     try {
         const result = await pool.query(
@@ -290,6 +291,11 @@ app.post('/api/deals', authorize(['admin', 'manager', 'rep']), async (req, res) 
 app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, res) => {
     const { id } = req.params;
     const { stage } = req.body;
+
+    // Interns Restriction (Strict Check)
+    if (req.user.role === 'intern') {
+        return res.status(403).json({ error: 'Interns cannot move or edit deals' });
+    }
 
     if (!stage) return res.status(400).json({ error: 'Stage is required' });
 
@@ -335,6 +341,21 @@ app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, 
         await req.audit('UPDATE', 'DEAL', id, { stage: currentDeal.stage }, updatedDeal);
 
         res.json(updatedDeal);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// FR-B.1: Activity Logging API
+app.post('/api/activities', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
+    const { deal_id, type, content } = req.body; // type: CALL, EMAIL, NOTE, MEETING
+    try {
+        const result = await pool.query(
+            `INSERT INTO activities (deal_id, type, content) VALUES ($1, $2, $3) RETURNING *`,
+            [deal_id, type, content]
+        );
+        res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });

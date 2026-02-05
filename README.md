@@ -37,72 +37,54 @@
 
 ---
 
-## ⚙️ Setup Instructions
+## ⚙️ Quick Start (Run on New System)
 
-### 1. Prerequisites
-*   Node.js (v18+)
-*   Supabase Project (Credentials required)
-*   Google Cloud Project (for OAuth)
+Follow these steps to set up the project on a new machine:
 
-### 2. Installation
-Navigate to the folders and install dependencies:
+### 1. Clone & Install
+```bash
+git clone <repository-url>
+cd "SSSI Growth Engine"
+
+# Install all dependencies (Root, Client, Server)
+npm run install-all
+```
+
+### 2. Environment Setup
+Create environment files from the examples and add your credentials:
+
+**Client:**
+```bash
+cp client/.env.example client/.env.local
+# Edit client/.env.local with your Supabase keys
+```
+
+**Server:**
+```bash
+cp server/.env.example server/.env
+# Edit server/.env with your Supabase keys & Database URL
+```
+
+### 3. Run the Application
+You can start the Client and Server concurrently from the root:
 
 ```bash
-# Server
-cd server
-npm install
-
-# Client
-cd ../client
-npm install
+# Starts Client (localhost:3000) and Server (localhost:5000)
+npm run dev
 ```
 
-### 3. Environment Configuration
-
-#### Server (`server/.env`)
-```env
-# Database Connection
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
-
-# Supabase API Keys (Found in Project Settings > API)
-SUPABASE_URL=https://[REF].supabase.co
-SUPABASE_ANON_KEY=[ANON_KEY]
-SUPABASE_PUBLISHABLE_KEY=[PUBLISHABLE_KEY]
-```
-
-#### Client (`client/.env.local`)
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://[REF].supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=[ANON_KEY]
-```
-
-### 4. Supabase & Google Auth Setup
-1.  **Enable Google Auth**: In Supabase Dashboard > Authentication > Providers.
-2.  **Configure Google Cloud**:
-    *   Create a Project in Google Cloud Console.
-    *   Create OAuth 2.0 Credentials (Web App).
-    *   Add Supabase Callback URL to "Authorized redirect URIs".
-    *   Copy Client ID/Secret to Supabase.
-
-### 5. Database Initialization
-Run the migration and seed scripts to create tables and load test data:
-
-```bash
-cd server
-node migrate.js  # Creates Tables
-# node seed.js   # Optional: Inserts Test Data
-```
+*Note: If you encounter issues, you can run them in separate terminals as described below.*
 
 ---
 
-## 🏃‍♂️ Running the Application
+## 🏃‍♂️ Manual Run (Separate Terminals)
 
-You need to run 3 separate processes (Terminal tabs):
+If you prefer running services individually:
 
 **1. Backend API**
 ```bash
 cd server
-node index.js
+npm run dev
 # Runs on localhost:5000
 ```
 
@@ -113,11 +95,10 @@ npm run dev
 # Runs on localhost:3000
 ```
 
-**3. Automation Brain**
+**3. Automation Brain (Background Jobs)**
 ```bash
 cd server
 node worker.js
-# Runs background jobs (Lead Assignment, Stale Checks)
 ```
 
 ---

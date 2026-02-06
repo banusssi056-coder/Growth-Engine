@@ -53,7 +53,11 @@ pool.on('error', (err) => {
 
 // -- Middleware --
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: '*', // Allow all origins for now to fix the Netlify issue
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(morgan('dev'));
 app.use(express.json());
 

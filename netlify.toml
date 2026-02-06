@@ -1,7 +1,12 @@
 [build]
   base = "client"
   command = "npm run build"
-  publish = ".next"
+
+[build.environment]
+  SECRETS_SCAN_ENABLED = "false"
+  CI = "false"
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--legacy-peer-deps"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

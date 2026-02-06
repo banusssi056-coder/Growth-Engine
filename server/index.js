@@ -21,22 +21,10 @@ const rawUrl = process.env.DATABASE_URL || 'postgresql://sssi_user:sssi_password
 let poolConfig;
 
 // HACK: Specific fix for user's password with '@'
-if (rawUrl.includes('2026Pass@123')) {
-    console.log('🔧 Using Explicit Config for complex password...');
-    poolConfig = {
-        user: 'postgres',
-        password: '2026Pass@123',
-        host: 'db.ghkviwcymbldnitaqbav.supabase.co',
-        port: 5432,
-        database: 'postgres',
-        ssl: { rejectUnauthorized: false }
-    };
-} else {
-    poolConfig = {
-        connectionString: rawUrl,
-        ssl: rawUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false
-    };
-}
+poolConfig = {
+    connectionString: rawUrl,
+    ssl: rawUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false
+};
 
 const pool = new Pool(poolConfig);
 
@@ -51,6 +39,11 @@ pool.connect((err, client, release) => {
         console.log('✅ Connected to Database');
         release();
     }
+});
+
+// Root Route for Deployment Check
+app.get('/', (req, res) => {
+    res.json({ message: 'SSSI Growth Engine API is Running 🚀' });
 });
 
 pool.on('error', (err) => {

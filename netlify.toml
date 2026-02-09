@@ -8,7 +8,7 @@
   NODE_VERSION = "18"
   NPM_FLAGS = "--legacy-peer-deps"
   NEXT_PUBLIC_SUPABASE_URL = "https://ghkviwcymbldnitaqbav.supabase.co"
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_DDxTjVbPWBlxPnHuHsnpJQ_5kQRe3vV"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdoa3Zpd2N5bWJsZG5pdGFxYmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0OTA1MTAsImV4cCI6MjA4NTA2NjUxMH0.E1LN_tqz6MaIjVJggrfqQzw1mbBiuYzcicpiNKkdmlA"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

@@ -8,6 +8,7 @@ const Board = dynamic(() => import('@/components/kanban/Board').then(mod => mod.
     loading: () => <div className="p-8 text-slate-500">Loading pipeline...</div>
 });
 import { supabase } from '../../lib/supabase';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function Dashboard() {
     const [deals, setDeals] = useState<any[]>([]);
@@ -69,33 +70,35 @@ export default function Dashboard() {
     }, [router]);
 
     return (
-        <div className="h-full flex flex-col overflow-hidden bg-slate-100">
-            {/* Header Stats */}
-            <header className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Sales Pipeline</h1>
-                    <p className="text-sm text-slate-500">Manage your active deals and track progress.</p>
-                </div>
-                <div className="flex gap-6">
-                    <div className="text-right">
-                        <div className="text-sm text-slate-500">Total Pipeline</div>
-                        <div className="text-xl font-bold text-slate-900">
-                            ${stats?.total_pipeline_value ? Number(stats.total_pipeline_value).toLocaleString() : '0.00'}
+        <ProtectedRoute>
+            <div className="h-full flex flex-col overflow-hidden bg-slate-100">
+                {/* Header Stats */}
+                <header className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800">Sales Pipeline</h1>
+                        <p className="text-sm text-slate-500">Manage your active deals and track progress.</p>
+                    </div>
+                    <div className="flex gap-6">
+                        <div className="text-right">
+                            <div className="text-sm text-slate-500">Total Pipeline</div>
+                            <div className="text-xl font-bold text-slate-900">
+                                ${stats?.total_pipeline_value ? Number(stats.total_pipeline_value).toLocaleString() : '0.00'}
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-sm text-slate-500">Weighted Forecast</div>
+                            <div className="text-xl font-bold text-emerald-600">
+                                ${stats?.expected_revenue ? Number(stats.expected_revenue).toLocaleString() : '0.00'}
+                            </div>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <div className="text-sm text-slate-500">Weighted Forecast</div>
-                        <div className="text-xl font-bold text-emerald-600">
-                            ${stats?.expected_revenue ? Number(stats.expected_revenue).toLocaleString() : '0.00'}
-                        </div>
-                    </div>
-                </div>
-            </header>
+                </header>
 
-            {/* Kanban Board */}
-            <main className="flex-1 overflow-hidden p-6">
-                <Board initialDeals={deals} userRole={userRole} />
-            </main>
-        </div>
+                {/* Kanban Board */}
+                <main className="flex-1 overflow-hidden p-6">
+                    <Board initialDeals={deals} userRole={userRole} />
+                </main>
+            </div>
+        </ProtectedRoute>
     );
 }

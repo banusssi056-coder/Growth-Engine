@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Board } from '@/components/kanban/Board';
 import { Plus } from 'lucide-react';
 import { CreateDealModal } from '@/components/deals/CreateDealModal';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function Deals() {
     const [deals, setDeals] = useState([]);
@@ -52,40 +54,42 @@ export default function Deals() {
     if (loading) return <div className="p-6 text-slate-500">Loading pipeline...</div>;
 
     return (
-        <div className="flex flex-col h-full bg-slate-50">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Sales Pipeline</h1>
-                    <p className="text-sm text-slate-500">Manage your active deals and track progress.</p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="text-right hidden sm:block">
-                        <p className="text-xs text-slate-500">Total Pipeline</p>
-                        <p className="font-bold text-slate-800">
-                            ${deals.reduce((acc, d: any) => acc + Number(d.value), 0).toLocaleString()}
-                        </p>
+        <ProtectedRoute>
+            <div className="flex flex-col h-full bg-slate-50">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800">Sales Pipeline</h1>
+                        <p className="text-sm text-slate-500">Manage your active deals and track progress.</p>
                     </div>
-                    {userRole !== 'intern' && (
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
-                        >
-                            <Plus size={16} />
-                            New Deal
-                        </button>
-                    )}
+                    <div className="flex items-center gap-4">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-xs text-slate-500">Total Pipeline</p>
+                            <p className="font-bold text-slate-800">
+                                ${deals.reduce((acc, d: any) => acc + Number(d.value), 0).toLocaleString()}
+                            </p>
+                        </div>
+                        {userRole !== 'intern' && (
+                            <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                            >
+                                <Plus size={16} />
+                                New Deal
+                            </button>
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            <div className="flex-1 overflow-hidden">
-                <Board initialDeals={deals} userRole={userRole} />
-            </div>
+                <div className="flex-1 overflow-hidden">
+                    <Board initialDeals={deals} userRole={userRole} />
+                </div>
 
-            <CreateDealModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={handleNewDeal}
-            />
-        </div>
+                <CreateDealModal
+                    isOpen={isCreateModalOpen}
+                    onClose={() => setIsCreateModalOpen(false)}
+                    onSuccess={handleNewDeal}
+                />
+            </div>
+        </ProtectedRoute>
     );
 }

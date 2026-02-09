@@ -17,7 +17,12 @@ const authenticate = async (req, res, next) => {
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
+        console.log('[Auth] Verifying token...');
         const { data: { user }, error } = await supabase.auth.getUser(token);
+
+        if (error) {
+            console.error('[Auth] Supabase Error:', error.message);
+        }
 
         if (!error && user) {
             // Sync with local DB to get Role
@@ -25,6 +30,7 @@ const authenticate = async (req, res, next) => {
                 if (!req.db) throw new Error("Database connection pool missing from request");
                 if (!user.email) throw new Error("User email missing from Supabase token");
 
+                console.log(`[Auth] Syncing user: ${user.email}`);
                 const dbUser = await syncUser(req.db, user);
 
                 req.user = {
@@ -35,10 +41,14 @@ const authenticate = async (req, res, next) => {
                 };
                 return next();
             } catch (err) {
-                console.error("Auth Sync Error", err);
+                console.error("[Auth] Sync Error", err);
                 return res.status(500).json({ error: `Auth Error: ${err.message}` });
             }
+        } else {
+            console.warn('[Auth] No user found for token or error occurred');
         }
+    } else {
+        console.log('[Auth] No Bearer token found');
     }
 
     // fallback for dev/legacy without token or failed auth

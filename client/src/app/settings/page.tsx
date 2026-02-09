@@ -3,10 +3,19 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Download, Shield, ShieldAlert, Check, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'; // Keep local import
+
+interface User {
+    user_id: string;
+    email: string;
+    role: string;
+    manager_id?: string;
+    is_active: boolean;
+    created_at: string;
+}
 
 export default function Settings() {
-    const [users, setUsers] = useState<any[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
     const router = useRouter();
@@ -55,6 +64,25 @@ export default function Settings() {
         }
     };
 
+    const handleManagerChange = async (userId: string, newManagerId: string) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ manager_id: newManagerId || null })
+            });
+            setUsers(users.map(user => user.user_id === userId ? { ...user, manager_id: newManagerId } : user));
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
     const toggleStatus = async (userId: string, currentStatus: boolean) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
@@ -102,6 +130,8 @@ export default function Settings() {
             setExporting(false);
         }
     };
+
+    if (loading) return <div className="p-8 text-center">Loading settings...</div>;
 
     return (
         <div className="p-6 max-w-6xl mx-auto">
@@ -164,19 +194,8 @@ export default function Settings() {
                                     <td className="px-6 py-3">
                                         <select
                                             value={u.manager_id || ''}
-                                            onChange={async (e) => {
-                                                const newManagerId = e.target.value || null;
-                                                const { data: { session } } = await supabase.auth.getSession();
-                                                if (!session) return;
-                                                // Assuming API endpoint handles manager_id update
-                                                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${u.user_id}`, {
-                                                    method: 'PATCH',
-                                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                                    body: JSON.stringify({ manager_id: newManagerId })
-                                                });
-                                                setUsers(users.map(user => user.user_id === u.user_id ? { ...user, manager_id: newManagerId } : user));
-                                            }}
-                                            className="border border-slate-200 rounded text-sm px-2 py-1 w-32"
+                                            onChange={(e) => handleManagerChange(u.user_id, e.target.value)}
+                                            className="border border-slate-200 rounded text-sm px-2 py-1 w-48"
                                         >
                                             <option value="">-- None --</option>
                                             {/* Filtering logic: Only show Managers/Admins as options */}

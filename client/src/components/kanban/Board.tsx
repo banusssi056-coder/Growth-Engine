@@ -14,8 +14,8 @@ import {
     DragEndEvent,
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { DealCard } from './DealCard'; // Only DealCard needed for overlay
 import { Column } from './Column';
-import { DealCard } from './DealCard';
 
 interface Deal {
     deal_id: string;
@@ -37,11 +37,16 @@ export function Board({ initialDeals, userRole }: BoardProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!initialDeals) return;
+
         // Group deals by stage
         const grouped = STAGES.reduce((acc, stage) => {
-            acc[stage] = initialDeals.filter((d) => d.stage === stage);
+            // Strictly filter deals with valid IDs and correct stage
+            acc[stage] = initialDeals.filter((d) => d && d.deal_id && d.stage === stage);
             return acc;
         }, {} as Record<string, Deal[]>);
+
+        console.log("Board Initialized with items:", Object.keys(grouped).map(k => `${k}: ${grouped[k].length}`));
         setItems(grouped);
     }, [initialDeals]);
 
@@ -49,14 +54,9 @@ export function Board({ initialDeals, userRole }: BoardProps) {
     const isDragEnabled = userRole !== 'intern';
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: isDragEnabled ? 8 : 999999, // Hacky but effective disable
-            },
-        }),
+        useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
-            keyboardCodes: isDragEnabled ? undefined : { start: [], cancel: [], end: [] },
         })
     );
 
@@ -215,25 +215,19 @@ export function Board({ initialDeals, userRole }: BoardProps) {
         >
             <div className="flex h-full w-full gap-4 overflow-x-auto p-4">
                 {STAGES.map((stage) => (
-                    <div key={stage} className="flex h-full w-80 flex-col rounded-lg bg-slate-50 border border-slate-200">
-                        <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                            <h3 className="font-semibold text-slate-700">{stage}</h3>
-                            <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                                {items[stage]?.length || 0}
-                            </span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-2">
-                            {(items[stage] || []).map((deal) => (
-                                <DealCard key={deal.deal_id} deal={deal} onLogActivity={setLoggingDealId} />
-                            ))}
-                        </div>
-                    </div>
+                    <Column
+                        key={stage}
+                        id={stage}
+                        title={stage}
+                        deals={items[stage] || []}
+                        onLogActivity={setLoggingDealId}
+                    />
                 ))}
             </div>
             <DragOverlay dropAnimation={dropAnimation}>
                 {activeId ? (() => {
                     const activeDeal = Object.values(items).flat().find(d => d.deal_id === activeId);
-                    return activeDeal ? <DealCard deal={activeDeal} /> : null;
+                    return activeDeal ? <DealCard deal={activeDeal} isOverlay={true} /> : null;
                 })() : null}
             </DragOverlay>
 

@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 const syncUser = async (pool, supabaseUser) => {
-    const { email } = supabaseUser;
+    const email = supabaseUser.email.toLowerCase();
 
     // DEBUG LOG
     console.log(`[SyncUser] Starting sync for: ${email}`);
@@ -41,6 +41,7 @@ const syncUser = async (pool, supabaseUser) => {
         console.error('[SyncUser] Error syncing user:', err);
         throw err;
     }
+    // Added safety return null if something weird happens but likely throw above
 };
 
 module.exports = { syncUser };

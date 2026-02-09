@@ -148,19 +148,23 @@ app.get('/api/me', authenticate, async (req, res) => {
 app.post('/api/companies', authorize(['admin', 'manager', 'rep']), async (req, res) => {
     const { name, domain, industry, revenue } = req.body;
     try {
+        console.log('[CreateCompany] Starting...');
         const result = await pool.query(
             `INSERT INTO companies (name, domain, industry, revenue) 
        VALUES ($1, $2, $3, $4) RETURNING *`,
             [name, domain, industry, revenue]
         );
+        console.log('[CreateCompany] Inserted company');
         const newCompany = result.rows[0];
 
         // Audit Log
+        console.log('[CreateCompany] Auditing...');
         await req.audit('CREATE', 'COMPANY', newCompany.comp_id, null, newCompany);
+        console.log('[CreateCompany] Audited');
 
         res.status(201).json(newCompany);
     } catch (err) {
-        console.error(err);
+        console.error('[CreateCompany] Failed:', err);
         res.status(500).json({ error: err.message });
     }
 });

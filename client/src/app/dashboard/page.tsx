@@ -1,7 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Board } from '@/components/kanban/Board';
+import dynamic from 'next/dynamic';
+
+const Board = dynamic(() => import('@/components/kanban/Board').then(mod => mod.Board), {
+    ssr: false,
+    loading: () => <div className="p-8 text-slate-500">Loading pipeline...</div>
+});
 import { supabase } from '../../lib/supabase';
 
 export default function Dashboard() {

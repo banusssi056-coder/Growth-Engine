@@ -33,6 +33,8 @@ export function Sidebar() {
             if (res.ok) {
                 const fullUser = await res.json();
                 setUser(fullUser);
+            } else {
+                console.error('Failed to fetch user:', res.status, res.statusText);
             }
         } catch (err) {
             console.error("Error fetching user profile", err);

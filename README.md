@@ -1,43 +1,67 @@
 # SSSI GrowthEngine - Sales Accelerator & Automation Platform
 
-**SSSI GrowthEngine** is a modern Sales CRM designed to accelerate deal velocity through intelligent automation and real-time visibility. It combines a robust Kanban sales desk with a background "Brain" that automates lead assignment and hygiene.
+**SSSI GrowthEngine** is a modern Sales CRM designed to accelerate deal velocity through intelligent automation and real-time visibility. It combines a robust Kanban sales desk with a background "Brain" that automates lead assignment, hygiene, and smart workflows.
 
 ## 🚀 Key Features
 
-### 1. Sales Desk (Visible)
-*   **Kanban Pipeline**: Interactive drag-and-drop Deal board with real-time updates.
-*   **Weighted Forecasting**: Real-time revenue projection based on deal probability.
-*   **Deal Management**: Create, update, and track deal stages with full audit trail.
-*   **Contact Management**: Companies and contacts with smart search.
+### 1. Interactive Sales Desk
+*   **Drag-and-Drop Kanban Board**: Powerful deal pipeline with intuitive drag-and-drop interface powered by `@dnd-kit`
+    *   Smooth animations and real-time stage updates
+    *   Works seamlessly for all user roles (with permissions enforced)
+    *   Visual feedback during drag operations
+*   **Weighted Forecasting**: Real-time revenue projection based on deal probability and stage
+*   **Deal Management**: Create, update, and track deal stages with full audit trail
+*   **Contact & Company Management**: Comprehensive CRM with smart search and relationship tracking
+*   **Activity Timeline**: Complete history of all interactions, emails, and updates
 
-### 2. The Brain (Automation)
-*   **Round-Robin Distributor**: Automatically assigns new leads to active Sales Reps to ensure fair distribution.
-*   **Stale Lead Detection**: Background job scans for deals inactive for >30 days and flags them as "Stale".
+### 2. The Brain (Background Automation)
+*   **Round-Robin Lead Assignment**: Automatically distributes new leads fairly among active Sales Reps
+*   **Stale Deal Detection**: Background worker scans for deals inactive >30 days and flags them
+*   **Automated Hygiene**: Keeps your pipeline clean and up-to-date
+*   **Scheduled Jobs**: Runs via `node-cron` for reliable background processing
 
-### 3. Intelligence
-*   **Lead Scoring**: Dynamic scoring based on engagement (e.g., Email Opens +5, Silence -20).
-*   **Pixel Tracking**: Invisible pixel for tracking email opens.
-*   **Liquid Templates**: Dynamic email rendering with personalization.
+### 3. Intelligence & Tracking
+*   **Lead Scoring**: Dynamic scoring based on engagement (e.g., Email Opens +5, Silence -20)
+*   **Email Pixel Tracking**: Invisible pixel for tracking email opens
+*   **Liquid Templates**: Dynamic email rendering with personalization tokens
+*   **Audit Logs**: Complete activity trail for compliance and reporting
 
 ### 4. Security & Access Control
-*   **Google Login**: Secure authentication via Supabase Auth + Google OAuth.
+*   **Google OAuth Authentication**: Secure login via Supabase Auth + Google
 *   **Role-Based Access Control (RBAC)**:
-    *   **Admin**: Full access to all deals, settings, and user management. First user is auto-assigned Admin.
-    *   **Sales Manager**: Access to team deals and reports.
-    *   **Sales Rep**: Access only to their own deals.
-    *   **Intern**: Restricted access (Lead view/create only).
+    *   **Admin**: Full access to all deals, settings, user management, and system configuration. First user is auto-assigned Admin.
+    *   **Sales Manager**: Access to team deals, reports, and performance dashboards
+    *   **Sales Rep**: Access only to their own assigned deals
+    *   **Intern**: Restricted access (Lead view/create only, no editing)
+*   **Row-Level Security**: Supabase RLS policies ensure data isolation
 
 ---
 
 ## 🛠 Technology Stack
 
-*   **Frontend**: Next.js 14, React 18, Tailwind CSS 3.4, TypeScript
-*   **Backend**: Node.js 18, Express.js 5
-*   **Database**: Supabase (PostgreSQL)
+### Frontend
+*   **Framework**: Next.js 14.2 (App Router) with React 18
+*   **Language**: TypeScript 5
+*   **Styling**: Tailwind CSS 3.4 with custom design system
+*   **UI Components**: Lucide React icons, CLSX + Tailwind Merge for dynamic styling
+*   **Drag & Drop**: @dnd-kit (core, sortable, utilities) for Kanban board
 *   **Authentication**: Supabase Auth with Google OAuth
-*   **Worker**: `node-cron` for background task scheduling
-*   **Deployment**: Netlify (Frontend) + Render/Railway (Backend)
-*   **Environment**: Optimized for cross-platform compatibility (Windows/Linux)
+
+### Backend
+*   **Runtime**: Node.js 18.x (locked for stability)
+*   **Framework**: Express.js 5.2
+*   **Database**: Supabase (PostgreSQL) with direct `pg` driver
+*   **Background Jobs**: `node-cron` for scheduled task automation
+*   **Templating**: LiquidJS for dynamic email generation
+*   **Security**: Helmet.js, CORS, custom RBAC middleware
+
+### Development & Deployment
+*   **Package Manager**: NPM
+*   **Monorepo**: Concurrent dev with `concurrently`
+*   **Frontend Hosting**: Netlify (with Next.js plugin)
+*   **Backend Hosting**: Render.com / Railway.app
+*   **Version Control**: Git + GitHub
+*   **Environment**: Cross-platform compatible (Windows/Linux/macOS)
 
 ---
 
@@ -170,14 +194,28 @@ git push origin main
    - Click **Add new site** → **Import an existing project**
    - Connect to your GitHub repo
    - Netlify will auto-detect the build settings from `netlify.toml`
+   - **Important**: The `netlify.toml` file **already disables the secrets scanner** to prevent false positives with Supabase public keys
    - Click **Deploy**
 
-3. **Environment Variables** (already configured in `netlify.toml`):
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `NEXT_PUBLIC_API_URL` (set this to your deployed backend URL)
+3. **Environment Variables** (Netlify Dashboard):
+   - Go to Site Settings → Environment Variables
+   - Add the following:
+     - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon/public key (safe to expose)
+     - `NEXT_PUBLIC_API_URL`: Your deployed backend URL (e.g., `https://your-api.render.com`)
 
-### Backend (Render/Railway)
+4. **Secrets Scanner Note**:
+   - Netlify's secrets scanner may falsely flag Supabase's `NEXT_PUBLIC_SUPABASE_ANON_KEY` as a secret
+   - This is **already handled** in `netlify.toml` with:
+     ```toml
+     [build.environment]
+       GATSBY_TELEMETRY_DISABLED = "1"
+       NEXT_TELEMETRY_DISABLED = "1"
+       DISABLE_SECRETS_SCANNER = "true"
+     ```
+   - The anon key is **safe to use** in frontend code (it's public by design)
+
+### Backend (Render.com / Railway.app)
 
 **Option 1: Render.com**
 1. Create a new **Web Service**
@@ -186,14 +224,32 @@ git push origin main
    - **Root Directory**: `server`
    - **Build Command**: `npm install`
    - **Start Command**: `node index.js`
-4. Add environment variables from `server/.env`
+   - **Environment**: Node 18
+4. Add environment variables from `server/.env`:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `DATABASE_URL` (Supabase connection string)
 5. Deploy
 
 **Option 2: Railway.app**
 1. Create a new project
 2. Deploy from GitHub
-3. Add environment variables
-4. Railway will auto-detect and deploy
+3. Set Root Directory to `/server`
+4. Add all environment variables from `server/.env`
+5. Railway will auto-detect and deploy
+
+### Worker (Background Jobs)
+
+The `server/worker.js` file contains the background automation (Brain). You have two options:
+
+**Option A: Run as separate service** (Recommended for production)
+- Deploy as a second Render/Railway service with:
+  - **Start Command**: `node worker.js`
+  - Same environment variables as the main server
+
+**Option B: Include in main server**
+- The worker can run alongside the API server
+- Note: Some hosting platforms may restart workers, so a separate service is more reliable
 
 ---
 

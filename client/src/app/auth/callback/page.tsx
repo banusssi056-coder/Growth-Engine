@@ -23,54 +23,65 @@ export default function AuthCallback() {
 
                 setStatus('Fetching user profile...');
 
-                // Fetch user profile and role from backend
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${session.access_token}`
-                    }
-                });
+                // Fetch user profile and role from backend with timeout
+                let user = null;
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-                if (!response.ok) {
-                    console.error('Failed to fetch user profile:', response.status);
-                    setStatus('Failed to load profile. Redirecting to default dashboard...');
-                    setTimeout(() => router.push('/dashboard'), 2000);
-                    return;
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (response.ok) {
+                        user = await response.json();
+                        console.log('User profile loaded:', user);
+                        // Store user data in sessionStorage for immediate access
+                        sessionStorage.setItem('userProfile', JSON.stringify(user));
+                    } else {
+                        console.error('Failed to fetch user profile:', response.status);
+                    }
+                } catch (fetchError: any) {
+                    console.error('Error fetching user profile:', fetchError.message);
+                    // Continue without profile - will use default dashboard
                 }
 
-                const user = await response.json();
-                console.log('User profile loaded:', user);
-
-                // Store user data in sessionStorage for immediate access
-                sessionStorage.setItem('userProfile', JSON.stringify(user));
-
-                // Role-based routing
-                setStatus(`Welcome! Redirecting to your ${user.role} dashboard...`);
-
+                // Determine redirect path based on role (if available)
                 let redirectPath = '/dashboard'; // Default fallback
 
-                switch (user.role?.toLowerCase()) {
-                    case 'admin':
-                        redirectPath = '/admin/dashboard';
-                        break;
-                    case 'manager':
-                        redirectPath = '/manager/dashboard';
-                        break;
-                    case 'rep':
-                    case 'intern':
-                    default:
-                        redirectPath = '/dashboard';
-                        break;
+                if (user?.role) {
+                    setStatus(`Welcome! Redirecting to your ${user.role} dashboard...`);
+
+                    switch (user.role.toLowerCase()) {
+                        case 'admin':
+                            redirectPath = '/admin/dashboard';
+                            break;
+                        case 'manager':
+                            redirectPath = '/manager/dashboard';
+                            break;
+                        case 'rep':
+                        case 'intern':
+                        default:
+                            redirectPath = '/dashboard';
+                            break;
+                    }
+                } else {
+                    setStatus('Welcome! Redirecting to dashboard...');
                 }
 
-                // Small delay to show the welcome message
-                setTimeout(() => {
-                    router.push(redirectPath);
-                }, 1000);
+                // Redirect immediately (no delay needed)
+                router.push(redirectPath);
 
             } catch (error) {
                 console.error('Auth callback error:', error);
-                setStatus('An error occurred. Redirecting to login...');
-                setTimeout(() => router.push('/login'), 2000);
+                setStatus('An error occurred. Redirecting to dashboard...');
+                // Even on error, redirect to dashboard instead of login
+                setTimeout(() => router.push('/dashboard'), 1500);
             }
         };
 

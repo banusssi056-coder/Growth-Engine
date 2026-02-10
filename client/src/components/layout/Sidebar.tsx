@@ -2,16 +2,9 @@
 import { BarChart3, Users, Briefcase, Settings, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
-
-const NAV_ITEMS = [
-    { label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
-    { label: 'Deals', icon: Briefcase, href: '/deals' },
-    { label: 'Contacts', icon: Users, href: '/contacts' },
-    { label: 'Settings', icon: Settings, href: '/settings' },
-];
 
 export function Sidebar() {
     const pathname = usePathname();
@@ -23,8 +16,21 @@ export function Sidebar() {
             setUser(null);
             return;
         }
+
+        // Check sessionStorage first for immediate display
         try {
-            // Use 127.0.0.1 to avoid IPv6 issues on Windows
+            const cachedUser = sessionStorage.getItem('userProfile');
+            if (cachedUser) {
+                const parsedUser = JSON.parse(cachedUser);
+                setUser(parsedUser);
+                console.log('[Sidebar] Loaded user from cache:', parsedUser);
+            }
+        } catch (err) {
+            console.error('Error loading cached user:', err);
+        }
+
+        // Then fetch fresh data from API
+        try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`
@@ -33,6 +39,9 @@ export function Sidebar() {
             if (res.ok) {
                 const fullUser = await res.json();
                 setUser(fullUser);
+                // Update cache
+                sessionStorage.setItem('userProfile', JSON.stringify(fullUser));
+                console.log('[Sidebar] Fetched fresh user data:', fullUser);
             } else {
                 console.error('Failed to fetch user:', res.status, res.statusText);
             }
@@ -56,9 +65,29 @@ export function Sidebar() {
     }, []);
 
     const handleSignOut = async () => {
+        // Clear cached user data
+        sessionStorage.removeItem('userProfile');
         await supabase.auth.signOut();
         router.push('/login');
     };
+
+    // Dynamically determine dashboard link based on user role
+    const navItems = useMemo(() => {
+        let dashboardHref = '/dashboard'; // Default
+
+        if (user?.role === 'admin') {
+            dashboardHref = '/admin/dashboard';
+        } else if (user?.role === 'manager') {
+            dashboardHref = '/manager/dashboard';
+        }
+
+        return [
+            { label: 'Dashboard', icon: BarChart3, href: dashboardHref },
+            { label: 'Deals', icon: Briefcase, href: '/deals' },
+            { label: 'Contacts', icon: Users, href: '/contacts' },
+            { label: 'Settings', icon: Settings, href: '/settings' },
+        ];
+    }, [user?.role]);
 
     return (
         <div className="flex h-full w-64 flex-col bg-slate-900 text-white">
@@ -67,7 +96,7 @@ export function Sidebar() {
             </div>
             <div className="flex-1 py-6">
                 <nav className="space-y-1 px-3">
-                    {NAV_ITEMS.filter(item => {
+                    {navItems.filter((item) => {
                         if (item.label === 'Settings' && user?.role !== 'admin') return false;
                         return true;
                     }).map((item) => (

@@ -3,6 +3,9 @@
   command = "npm run build"
   publish = ".next"
 
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [build.environment]
   SECRETS_SCAN_ENABLED = "false"
   CI = "false"
@@ -11,4 +14,7 @@
   NEXT_PUBLIC_SUPABASE_URL = "https://ghkviwcymbldnitaqbav.supabase.co"
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdoa3Zpd2N5bWJsZG5pdGFxYmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0OTA1MTAsImV4cCI6MjA4NTA2NjUxMH0.E1LN_tqz6MaIjVJggrfqQzw1mbBiuYzcicpiNKkdmlA"
   NEXT_PUBLIC_API_URL = "https://sssi-growth-engine-api.onrender.com"
+<<<<<<< HEAD
   package = "@netlify/plugin-nextjs"
+=======
+>>>>>>> 2a77062 (Fix Netlify deployment: Move Next.js plugin to correct section)

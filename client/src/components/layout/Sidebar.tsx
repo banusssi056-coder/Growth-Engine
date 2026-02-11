@@ -18,23 +18,35 @@ export function Sidebar() {
     const [user, setUser] = useState<any>(null);
     const router = useRouter();
 
-    const fetchUser = async (session: any) => {
-        if (!session?.access_token) {
-            setUser(null);
-            return;
-        }
+
+    const fetchUser = async () => {
         try {
-            // Use 127.0.0.1 to avoid IPv6 issues on Windows
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`
-                }
-            });
-            if (res.ok) {
-                const fullUser = await res.json();
-                setUser(fullUser);
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                setUser(null);
+                return;
+            }
+
+            // Fetch the user profile from the users table
+            const { data: profile, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+            if (error) {
+                console.error('Error fetching user profile:', error);
+                // Fallback to basic user data from auth
+                setUser({
+                    user_id: user.id,
+                    email: user.email,
+                    full_name: user.email?.split('@')[0],
+                    role: 'rep'
+                });
             } else {
-                console.error('Failed to fetch user:', res.status, res.statusText);
+                setUser(profile);
             }
         } catch (err) {
             console.error("Error fetching user profile", err);
@@ -43,13 +55,15 @@ export function Sidebar() {
 
     useEffect(() => {
         // Initial check
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            fetchUser(session);
-        });
+        fetchUser();
 
         // Listen for changes (Sign In / Sign Out)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            fetchUser(session);
+            if (session) {
+                fetchUser();
+            } else {
+                setUser(null);
+            }
         });
 
         return () => subscription.unsubscribe();

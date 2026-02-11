@@ -20,39 +20,27 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
         e.preventDefault();
         setLoading(true);
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/companies`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({
-                    name,
+            const { error } = await supabase.from("companies").insert([
+                {
+                    name: name,
                     domain,
                     industry,
-                    revenue: parseInt(revenue) || 0
-                })
-            });
+                    annual_revenue: revenue
+                }
+            ]);
 
-            if (res.ok) {
-                const newCompany = await res.json();
-                onSuccess(newCompany);
-                onClose();
-                setName('');
-                setDomain('');
-                setIndustry('');
-                setRevenue('');
-            } else {
-                const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
-                console.error('Create company failed:', res.status, errorData);
-                alert(`Failed to create company: ${errorData.error || res.statusText}`);
-            }
+            if (error) throw error;
+
+            onSuccess({ name, domain, industry, revenue });
+            onClose();
+            setName('');
+            setDomain('');
+            setIndustry('');
+            setRevenue('');
         } catch (err) {
             console.error(err);
+            alert(`Failed to create company: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
             setLoading(false);
         }

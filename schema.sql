@@ -13,10 +13,15 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
+    full_name VARCHAR(255),
+    avatar_url TEXT,
+    phone VARCHAR(50),
+    department VARCHAR(100),
     role VARCHAR(50) DEFAULT 'rep', -- admin, manager, rep, intern
     is_active BOOLEAN DEFAULT TRUE,
     last_assigned_at TIMESTAMP WITH TIME ZONE, -- For Round Robin
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Companies Table
@@ -88,4 +93,40 @@ CREATE TABLE audit_logs (
 CREATE INDEX idx_contacts_email ON contacts(email);
 CREATE INDEX idx_contacts_name ON contacts(last_name, first_name);
 CREATE INDEX idx_companies_name ON companies(name);
+CREATE INDEX idx_users_email ON users(email);
+
+-- Trigger Function: Auto-create user profile on Supabase Auth signup
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.users (user_id, email, full_name, role, is_active)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+        COALESCE(NEW.raw_user_meta_data->>'role', 'rep'),
+        true
+    )
+    ON CONFLICT (user_id) DO UPDATE
+    SET
+        email = EXCLUDED.email,
+        full_name = COALESCE(EXCLUDED.full_name, users.full_name),
+        updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger: Execute function when new user signs up via Supabase Auth
+-- Note: This trigger should be created in Supabase SQL Editor on auth.users table
+-- CREATE TRIGGER on_auth_user_created
+-- AFTER INSERT ON auth.users
+-- FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Insert sample users for testing (optional - remove in production)
+-- These will be used when users sign up via Supabase
+INSERT INTO users (email, full_name, role, phone, department) VALUES
+('admin@sssi.com', 'Admin User', 'admin', '+1-555-0100', 'Management'),
+('manager@sssi.com', 'Manager User', 'manager', '+1-555-0101', 'Sales'),
+('rep@sssi.com', 'Sales Representative', 'rep', '+1-555-0102', 'Sales')
+ON CONFLICT (email) DO NOTHING;
 

@@ -87,18 +87,49 @@ export function Sidebar() {
             </div>
             <div className="border-t border-slate-700 p-4">
                 {user && (
-                    <div className="flex items-center mb-4 px-2">
-                        <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-sm font-bold text-white mr-3">
-                            {user.email?.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="overflow-hidden">
-                            <p className="text-sm font-medium text-white truncate">{user.email}</p>
+                    <div className="mb-4 px-2">
+                        <div className="flex items-start space-x-3">
+                            {/* Avatar */}
+                            <div className="relative flex-shrink-0">
+                                {user.avatar_url ? (
+                                    <img
+                                        src={user.avatar_url}
+                                        alt={user.full_name || user.email}
+                                        className="h-10 w-10 rounded-full object-cover ring-2 ring-emerald-500/20"
+                                    />
+                                ) : (
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-sm font-bold text-white ring-2 ring-emerald-500/20 shadow-lg">
+                                        {(user.full_name || user.email)?.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* User Info */}
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-white truncate">
+                                    {user.full_name || user.email?.split('@')[0] || 'User'}
+                                </p>
+                                <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                                {user.role && (
+                                    <span
+                                        className={cn(
+                                            "inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded",
+                                            user.role === 'admin' && "bg-purple-500/20 text-purple-300",
+                                            user.role === 'manager' && "bg-blue-500/20 text-blue-300",
+                                            user.role === 'rep' && "bg-emerald-500/20 text-emerald-300",
+                                            user.role === 'intern' && "bg-amber-500/20 text-amber-300"
+                                        )}
+                                    >
+                                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
                 <button
                     onClick={handleSignOut}
-                    className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white"
+                    className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
                 >
                     <LogOut className="mr-3 h-5 w-5" />
                     Sign Out

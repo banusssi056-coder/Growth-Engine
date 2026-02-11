@@ -33,11 +33,17 @@ const authenticate = async (req, res, next) => {
                 console.log(`[Auth] Syncing user: ${user.email}`);
                 const dbUser = await syncUser(req.db, user);
 
+                // Return full user profile
                 req.user = {
                     id: dbUser.user_id, // Local DB ID
                     supabase_id: user.id,
                     email: dbUser.email,
-                    role: dbUser.role
+                    full_name: dbUser.full_name,
+                    avatar_url: dbUser.avatar_url,
+                    phone: dbUser.phone,
+                    department: dbUser.department,
+                    role: dbUser.role,
+                    is_active: dbUser.is_active
                 };
                 return next();
             } catch (err) {

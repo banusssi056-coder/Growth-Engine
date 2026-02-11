@@ -26,7 +26,7 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                     name: name,
                     domain,
                     industry,
-                    annual_revenue: revenue
+                    revenue: revenue ? parseFloat(revenue) : null
                 }
             ]);
 

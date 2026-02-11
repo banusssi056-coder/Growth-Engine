@@ -26,19 +26,20 @@ export default function Settings() {
     }, []);
 
     const fetchUsers = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (data) {
                 setUsers(data);
             }
         } catch (err) {
-            console.error(err);
+            console.error("Error loading users", err);
+            alert(`Failed to load users: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
             setLoading(false);
         }

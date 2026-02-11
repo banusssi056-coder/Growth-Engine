@@ -6,7 +6,7 @@ import { CreateCompanyModal } from '@/components/contacts/CreateCompanyModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function Contacts() {
-    const [companies, setCompanies] = useState([]);
+    const [companies, setCompanies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -15,21 +15,23 @@ export default function Contacts() {
     }, []);
 
     const fetchCompanies = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/companies`, {
-                    headers: { 'Authorization': `Bearer ${session.access_token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setCompanies(data);
-                }
-            } catch (err) {
-                console.error("Error loading companies", err);
+        try {
+            const { data, error } = await supabase
+                .from('companies')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (data) {
+                setCompanies(data);
             }
+        } catch (err) {
+            console.error("Error loading companies", err);
+            alert(`Failed to load companies: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleNewCompany = (newCompany: any) => {

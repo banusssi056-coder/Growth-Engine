@@ -13,12 +13,4 @@
   NPM_FLAGS = "--legacy-peer-deps"
   NEXT_PUBLIC_SUPABASE_URL = "https://ghkviwcymbldnitaqbav.supabase.co"
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdoa3Zpd2N5bWJsZG5pdGFxYmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0OTA1MTAsImV4cCI6MjA4NTA2NjUxMH0.E1LN_tqz6MaIjVJggrfqQzw1mbBiuYzcicpiNKkdmlA"
-<<<<<<< HEAD
-  NEXT_PUBLIC_API_URL = "https://sssi-growth-engine-api.onrender.com"
-<<<<<<< HEAD
-  package = "@netlify/plugin-nextjs"
-=======
->>>>>>> 2a77062 (Fix Netlify deployment: Move Next.js plugin to correct section)
-=======
   NEXT_PUBLIC_API_URL = "https://growth-engine-fzoe.onrender.com"
->>>>>>> 1be7d0f (Update API URL to correct Render endpoint)

@@ -221,9 +221,10 @@ app.get('/api/dashboard/stats', authorize(['admin', 'manager']), async (req, res
 app.get('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     try {
         let query = `
-      SELECT d.*, c.name as company_name 
+      SELECT d.*, c.name as company_name, u.email as owner_email
       FROM deals d
       LEFT JOIN companies c ON d.comp_id = c.comp_id
+      LEFT JOIN users u ON d.owner_id = u.user_id
     `;
         const params = [];
 

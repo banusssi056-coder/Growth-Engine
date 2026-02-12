@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Board } from '@/components/kanban/Board';
-import { Plus } from 'lucide-react';
+import { DealsTable } from '@/components/deals/DealsTable';
+import { Plus, LayoutGrid, List } from 'lucide-react';
 import { CreateDealModal } from '@/components/deals/CreateDealModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -13,6 +14,7 @@ export default function Deals() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('rep'); // Default safe
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [viewMode, setViewMode] = useState<'board' | 'list'>('list');
 
     useEffect(() => {
         const init = async () => {
@@ -62,6 +64,22 @@ export default function Deals() {
                         <p className="text-sm text-slate-500">Manage your active deals and track progress.</p>
                     </div>
                     <div className="flex items-center gap-4">
+                        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-white shadow text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                title="List View"
+                            >
+                                <List size={16} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('board')}
+                                className={`p-1.5 rounded transition-colors ${viewMode === 'board' ? 'bg-white shadow text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                title="Kanban Board"
+                            >
+                                <LayoutGrid size={16} />
+                            </button>
+                        </div>
                         <div className="text-right hidden sm:block">
                             <p className="text-xs text-slate-500">Total Pipeline</p>
                             <p className="font-bold text-slate-800">
@@ -80,8 +98,12 @@ export default function Deals() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden">
-                    <Board initialDeals={deals} userRole={userRole} />
+                <div className="flex-1 overflow-hidden p-4">
+                    {viewMode === 'board' ? (
+                        <Board initialDeals={deals} userRole={userRole} />
+                    ) : (
+                        <DealsTable deals={deals} />
+                    )}
                 </div>
 
                 <CreateDealModal

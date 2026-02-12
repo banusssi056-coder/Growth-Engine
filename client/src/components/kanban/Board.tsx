@@ -23,6 +23,8 @@ interface Deal {
     company_name: string;
     value: number;
     stage: string;
+    level?: string;
+    offering?: string;
 }
 
 interface BoardProps {

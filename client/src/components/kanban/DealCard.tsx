@@ -5,11 +5,13 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
 
-interface Deal {
+export interface Deal {
     deal_id: string;
     name: string;
     company_name: string;
     value: number;
+    level?: string;
+    offering?: string;
 }
 
 interface DealCardProps {
@@ -40,7 +42,19 @@ export function DealCard({ deal, onLogActivity, isOverlay }: DealCardProps) {
             </CardHeader>
             <CardContent className="p-4 pt-0">
                 <div className="text-xs text-gray-500">{deal.company_name}</div>
-                <div className="flex justify-between items-end mt-1">
+                <div className="flex flex-wrap gap-1 mt-2 mb-1">
+                    {deal.offering && (
+                        <span className="inline-flex items-center rounded bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 border border-blue-100">
+                            {deal.offering}
+                        </span>
+                    )}
+                    {deal.level && (
+                        <span className="inline-flex items-center rounded bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-700 border border-purple-100">
+                            {deal.level}
+                        </span>
+                    )}
+                </div>
+                <div className="flex justify-between items-end mt-2">
                     <div className="font-bold text-lg">
                         ${Number(deal.value).toLocaleString()}
                     </div>
@@ -59,7 +73,7 @@ export function DealCard({ deal, onLogActivity, isOverlay }: DealCardProps) {
                     )}
                 </div>
             </CardContent>
-        </Card>
+        </Card >
     );
 }
 

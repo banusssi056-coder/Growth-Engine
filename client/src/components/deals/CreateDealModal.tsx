@@ -21,6 +21,8 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
     const [probability, setProbability] = useState('20');
     const [closingDate, setClosingDate] = useState('');
     const [compId, setCompId] = useState('');
+    const [level, setLevel] = useState('Standard');
+    const [offering, setOffering] = useState('Subscription');
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -68,7 +70,9 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                     value: parseFloat(value),
                     stage,
                     probability: parseInt(probability),
-                    closing_date: closingDate || null
+                    closing_date: closingDate || null,
+                    level,
+                    offering
                 })
             });
 
@@ -110,6 +114,34 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             placeholder="e.g. Q4 Software License"
                         />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Offering</label>
+                            <select
+                                value={offering}
+                                onChange={e => setOffering(e.target.value)}
+                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            >
+                                <option>Subscription</option>
+                                <option>Implementation</option>
+                                <option>Consulting</option>
+                                <option>Training</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Level</label>
+                            <select
+                                value={level}
+                                onChange={e => setLevel(e.target.value)}
+                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            >
+                                <option>Standard</option>
+                                <option>Premium</option>
+                                <option>Enterprise</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div>

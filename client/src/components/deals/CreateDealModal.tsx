@@ -55,6 +55,12 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!compId) {
+            alert("Please select a company. If none exist, add one in Contacts first.");
+            return;
+        }
+
         setLoading(true);
 
         const { data: { session } } = await supabase.auth.getSession();
@@ -90,7 +96,8 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                 setName('');
                 setValue('');
             } else {
-                alert('Failed to create deal');
+                const errData = await res.json();
+                alert(`Failed to create deal: ${errData.error || 'Unknown error'}`);
             }
         } catch (err) {
             console.error(err);

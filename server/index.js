@@ -274,12 +274,12 @@ app.get('/api/analytics/team', authorize(['admin', 'manager']), async (req, res)
 
 // FR-A.3: Deals API
 app.post('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
-    const { name, comp_id, value, stage, probability, closing_date } = req.body;
+    const { name, comp_id, value, stage, probability, closing_date, level, offering } = req.body;
     try {
         const result = await pool.query(
-            `INSERT INTO deals (name, comp_id, value, stage, probability, closing_date, owner_id) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-            [name, comp_id, value, stage, probability, closing_date, req.user.id] // Assign current user
+            `INSERT INTO deals (name, comp_id, value, stage, probability, closing_date, owner_id, level, offering) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            [name, comp_id, value, stage, probability, closing_date, req.user.id, level, offering] // Assign current user
         );
         const newDeal = result.rows[0];
 

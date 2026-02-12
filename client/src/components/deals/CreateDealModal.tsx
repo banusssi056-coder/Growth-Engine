@@ -36,20 +36,20 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
     }, [isOpen]);
 
     const fetchCompanies = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/companies`, {
-                    headers: { 'Authorization': `Bearer ${session.access_token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setCompanies(data);
-                    if (data.length > 0) setCompId(data[0].comp_id);
-                }
-            } catch (err) {
-                console.error("Failed to fetch companies", err);
+        try {
+            const { data, error } = await supabase
+                .from('companies')
+                .select('comp_id, name')
+                .order('name');
+
+            if (error) throw error;
+
+            if (data) {
+                setCompanies(data);
+                if (data.length > 0) setCompId(data[0].comp_id);
             }
+        } catch (err) {
+            console.error("Failed to fetch companies", err);
         }
     };
 

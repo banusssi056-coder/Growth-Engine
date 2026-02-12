@@ -17,12 +17,15 @@ interface CreateDealModalProps {
 export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalProps) {
     const [name, setName] = useState('');
     const [value, setValue] = useState('');
-    const [stage, setStage] = useState('Lead');
+    const [stage, setStage] = useState('1- New Lead');
     const [probability, setProbability] = useState('20');
     const [closingDate, setClosingDate] = useState('');
     const [compId, setCompId] = useState('');
     const [level, setLevel] = useState('Standard');
-    const [offering, setOffering] = useState('Subscription');
+    const [offering, setOffering] = useState('Web App/ Tools');
+    const [priority, setPriority] = useState('');
+    const [frequency, setFrequency] = useState('OneTime');
+    const [remark, setRemark] = useState('');
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -72,7 +75,10 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                     probability: parseInt(probability),
                     closing_date: closingDate || null,
                     level,
-                    offering
+                    offering,
+                    priority: priority ? parseFloat(priority) : null,
+                    frequency,
+                    remark
                 })
             });
 
@@ -124,10 +130,30 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                                 onChange={e => setOffering(e.target.value)}
                                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             >
-                                <option>Subscription</option>
-                                <option>Implementation</option>
-                                <option>Consulting</option>
-                                <option>Training</option>
+                                <option>AI Agent</option>
+                                <option>AI Images</option>
+                                <option>AI Video Ads</option>
+                                <option>B-School Consultation</option>
+                                <option>Book Writing</option>
+                                <option>Booking Page</option>
+                                <option>Business Consulting</option>
+                                <option>Courses</option>
+                                <option>Dashboard</option>
+                                <option>Doc- Booking</option>
+                                <option>Doc- HMS</option>
+                                <option>Doc- Website</option>
+                                <option>Fund Raising</option>
+                                <option>Insta Marketing</option>
+                                <option>Market Research</option>
+                                <option>Membership Platform</option>
+                                <option>Mobile App</option>
+                                <option>Presentations</option>
+                                <option>ROI Calc</option>
+                                <option>SEO- Blogs</option>
+                                <option>Staff</option>
+                                <option>Web App/ Tools</option>
+                                <option>Website New</option>
+                                <option>Website- Redesign</option>
                             </select>
                         </div>
                         <div>
@@ -142,6 +168,43 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                                 <option>Enterprise</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">LH Priority</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                value={priority}
+                                onChange={e => setPriority(e.target.value)}
+                                placeholder="e.g. 0.1"
+                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Frequency</label>
+                            <select
+                                value={frequency}
+                                onChange={e => setFrequency(e.target.value)}
+                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            >
+                                <option>OneTime</option>
+                                <option>Royalty</option>
+                                <option>Monthly</option>
+                                <option>Annual</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700">Remark</label>
+                        <textarea
+                            value={remark}
+                            onChange={e => setRemark(e.target.value)}
+                            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            rows={2}
+                        />
                     </div>
 
                     <div>
@@ -192,10 +255,15 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                                 onChange={e => setStage(e.target.value)}
                                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             >
-                                <option>Lead</option>
-                                <option>Meeting</option>
-                                <option>Proposal</option>
-                                <option>Closed</option>
+                                <option>1- New Lead</option>
+                                <option>2- Discussing, RFQing</option>
+                                <option>3- Presenting, Quoting</option>
+                                <option>4- Negotiating, Closing</option>
+                                <option>5- WIP</option>
+                                <option>6- Invoice, Payment pending</option>
+                                <option>7- Hold</option>
+                                <option>8- Paid</option>
+                                <option>9- Lost</option>
                             </select>
                         </div>
                         <div>

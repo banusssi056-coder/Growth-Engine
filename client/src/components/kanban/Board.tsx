@@ -25,6 +25,9 @@ interface Deal {
     stage: string;
     level?: string;
     offering?: string;
+    priority?: number;
+    frequency?: string;
+    remark?: string;
 }
 
 interface BoardProps {
@@ -32,7 +35,17 @@ interface BoardProps {
     userRole: string;
 }
 
-const STAGES = ['Lead', 'Meeting', 'Proposal', 'Closed'];
+const STAGES = [
+    '1- New Lead',
+    '2- Discussing, RFQing',
+    '3- Presenting, Quoting',
+    '4- Negotiating, Closing',
+    '5- WIP',
+    '6- Invoice, Payment pending',
+    '7- Hold',
+    '8- Paid',
+    '9- Lost'
+];
 
 export function Board({ initialDeals, userRole }: BoardProps) {
     const [items, setItems] = useState<Record<string, Deal[]>>({});

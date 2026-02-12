@@ -12,6 +12,9 @@ export interface Deal {
     value: number;
     level?: string;
     offering?: string;
+    priority?: number;
+    frequency?: string;
+    remark?: string;
 }
 
 interface DealCardProps {
@@ -53,10 +56,27 @@ export function DealCard({ deal, onLogActivity, isOverlay }: DealCardProps) {
                             {deal.level}
                         </span>
                     )}
+                    {deal.priority !== null && deal.priority !== undefined && (
+                        <span className="inline-flex items-center rounded bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 border border-amber-100">
+                            P: {deal.priority}
+                        </span>
+                    )}
                 </div>
+
+                {deal.remark && (
+                    <div className="text-[10px] text-slate-500 italic mb-2 line-clamp-2">
+                        {deal.remark}
+                    </div>
+                )}
+
                 <div className="flex justify-between items-end mt-2">
                     <div className="font-bold text-lg">
                         ${Number(deal.value).toLocaleString()}
+                        {deal.frequency && (
+                            <span className="text-[10px] font-normal text-slate-400 ml-1">
+                                / {deal.frequency}
+                            </span>
+                        )}
                     </div>
                     {!isOverlay && (
                         <button

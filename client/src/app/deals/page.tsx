@@ -98,11 +98,13 @@ export default function Deals() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden p-4">
+                <div className="flex-1 overflow-hidden p-4 bg-slate-50">
                     {viewMode === 'board' ? (
                         <Board initialDeals={deals} userRole={userRole} />
                     ) : (
-                        <DealsTable deals={deals} />
+                        <div className="h-full overflow-y-auto pr-2">
+                            <DealsTable deals={deals} />
+                        </div>
                     )}
                 </div>
 

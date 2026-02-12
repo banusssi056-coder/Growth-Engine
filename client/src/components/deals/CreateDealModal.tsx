@@ -109,9 +109,9 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl relative max-h-[90vh] overflow-y-auto">
+                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 z-10">
                     <X size={20} />
                 </button>
                 <h2 className="mb-4 text-xl font-bold text-slate-900">Create New Deal</h2>

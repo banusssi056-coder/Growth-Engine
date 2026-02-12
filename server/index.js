@@ -21,38 +21,66 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // -- Database Connection --
+// -- Database Connection --
 const rawUrl = process.env.DATABASE_URL || 'postgresql://sssi_user:sssi_password@localhost:5432/sssi_growthengine';
-let poolConfig;
+let pool;
 
-// HACK: Specific fix for user's password with '@'
-poolConfig = {
-    connectionString: rawUrl,
-    ssl: rawUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false
-};
+const startServer = async () => {
+    let connectionString = rawUrl;
 
-const pool = new Pool(poolConfig);
+    // FIX: Explicitly resolve hostname to IPv4 to prevent ENETUNREACH on IPv6-only environments (like Render)
+    try {
+        const { URL } = require('url');
+        const { lookup } = require('dns').promises;
+        const parsed = new URL(rawUrl);
 
-// Test Connection Immediately
-pool.connect((err, client, release) => {
-    if (err) {
+        // Resolve if it's a hostname (not IP) and not localhost
+        if (parsed.hostname && parsed.hostname !== 'localhost' && !parsed.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+            console.log(`[DNS] Resolving Database Host: ${parsed.hostname}...`);
+            const ip = await lookup(parsed.hostname, { family: 4 });
+            console.log(`[DNS] Resolved to IPv4: ${ip.address}`);
+            parsed.hostname = ip.address;
+            connectionString = parsed.toString();
+        }
+    } catch (err) {
+        console.warn('[DNS] Resolution warning:', err.message);
+    }
+
+    const poolConfig = {
+        connectionString,
+        ssl: rawUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false
+    };
+
+    pool = new Pool(poolConfig);
+
+    pool.on('error', (err) => {
+        console.error('Unexpected error on idle client', err);
+        process.exit(-1);
+    });
+
+    // Test Connection Immediately
+    try {
+        const client = await pool.connect();
+        console.log('✅ Connected to Database');
+        client.release();
+    } catch (err) {
         console.error('----------------------------------------');
         console.error('❌ DATABASE CONNECTION FAILED');
         console.error(err.message);
         console.error('----------------------------------------');
-    } else {
-        console.log('✅ Connected to Database');
-        release();
     }
-});
+
+    // -- Start Server --
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+};
+
+startServer();
 
 // Root Route for Deployment Check
 app.get('/', (req, res) => {
     res.json({ message: 'SSSI Growth Engine API is Running 🚀' });
-});
-
-pool.on('error', (err) => {
-    console.error('Unexpected error on idle client', err);
-    process.exit(-1);
 });
 
 // -- Middleware --
@@ -370,6 +398,4 @@ app.post('/api/activities', authorize(['admin', 'manager', 'rep', 'intern']), as
 
 
 // -- Start Server --
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Server initialized in startServer()

@@ -31,16 +31,22 @@ const startServer = async () => {
     // FIX: Explicitly resolve hostname to IPv4 to prevent ENETUNREACH on IPv6-only environments (like Render)
     try {
         const { URL } = require('url');
-        const { lookup } = require('dns').promises;
+        const { resolve4 } = require('dns').promises;
         const parsed = new URL(rawUrl);
 
         // Resolve if it's a hostname (not IP) and not localhost
         if (parsed.hostname && parsed.hostname !== 'localhost' && !parsed.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
             console.log(`[DNS] Resolving Database Host: ${parsed.hostname}...`);
-            const ip = await lookup(parsed.hostname, { family: 4 });
-            console.log(`[DNS] Resolved to IPv4: ${ip.address}`);
-            parsed.hostname = ip.address;
-            connectionString = parsed.toString();
+            try {
+                const addresses = await resolve4(parsed.hostname);
+                if (addresses && addresses.length > 0) {
+                    console.log(`[DNS] Resolved to IPv4: ${addresses[0]}`);
+                    parsed.hostname = addresses[0];
+                    connectionString = parsed.toString();
+                }
+            } catch (e) {
+                console.warn(`[DNS] ipv4 resolution failed: ${e.message}`);
+            }
         }
     } catch (err) {
         console.warn('[DNS] Resolution warning:', err.message);

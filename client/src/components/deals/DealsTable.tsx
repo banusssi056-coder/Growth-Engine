@@ -45,7 +45,7 @@ export function DealsTable({ deals }: DealsTableProps) {
                             <td className="px-3 py-2 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50">{deal.priority || '-'}</td>
                             <td className="px-3 py-2 font-medium text-slate-900 border-r border-slate-100">{deal.name}</td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
-                            <td className="px-3 py-2 text-slate-600 border-r border-slate-100">{deal.company_name}</td>
+                            <td className="px-3 py-2 text-slate-600 border-r border-slate-100">{deal.company_name || '-'}</td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100 capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</td>
                             <td className="px-3 py-2 text-right font-medium text-slate-900 border-r border-slate-100">
                                 ₹{Number(deal.value).toLocaleString()}

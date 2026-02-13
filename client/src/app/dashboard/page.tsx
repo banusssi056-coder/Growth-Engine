@@ -1,12 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
-
-const Board = dynamic(() => import('@/components/kanban/Board').then(mod => mod.Board), {
-    ssr: false,
-    loading: () => <div className="p-8 text-slate-500">Loading pipeline...</div>
-});
+import { DealsTable } from '@/components/deals/DealsTable';
 import { supabase } from '../../lib/supabase';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -95,8 +90,8 @@ export default function Dashboard() {
                 </header>
 
                 {/* Kanban Board */}
-                <main className="flex-1 overflow-hidden p-6">
-                    <Board initialDeals={deals} userRole={userRole} />
+                <main className="flex-1 overflow-y-auto p-6">
+                    <DealsTable deals={deals} />
                 </main>
             </div>
         </ProtectedRoute>

@@ -6,7 +6,9 @@
 ALTER TABLE deals
 ADD COLUMN IF NOT EXISTS priority NUMERIC(5, 2), -- LH Prio (e.g., 0.09)
 ADD COLUMN IF NOT EXISTS frequency VARCHAR(50),  -- e.g., 'OneTime', 'Royalty'
-ADD COLUMN IF NOT EXISTS remark TEXT;            -- e.g., 'Given Technical Presentation...'
+ADD COLUMN IF NOT EXISTS remark TEXT,            -- e.g., 'Given Technical Presentation...'
+ADD COLUMN IF NOT EXISTS level VARCHAR(50),      -- e.g., 'Standard', 'Premium'
+ADD COLUMN IF NOT EXISTS offering VARCHAR(100);  -- e.g., 'Web App/ Tools'
 
 -- 2. Migrate old stages to new stage names (Best Effort Mapping)
 -- This ensures existing deals don't disappear from the board

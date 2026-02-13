@@ -1,3 +1,4 @@
+7
 # Why Companies Are Not Showing in Frontend
 
 ## 🔍 The Problem

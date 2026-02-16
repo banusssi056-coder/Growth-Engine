@@ -336,14 +336,12 @@ app.post('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (
 
 app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, res) => {
     const { id } = req.params;
-    const { stage } = req.body;
+    const { stage, remark, priority, frequency, value, probability, closing_date } = req.body;
 
     // Interns Restriction (Strict Check)
     if (req.user.role === 'intern') {
         return res.status(403).json({ error: 'Interns cannot move or edit deals' });
     }
-
-    if (!stage) return res.status(400).json({ error: 'Stage is required' });
 
     try {
         // 1. Fetch current deal to check ownership check (RBAC)
@@ -357,34 +355,54 @@ app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, 
             return res.status(403).json({ error: 'You can only edit your own deals' });
         }
 
-        // 2. Update Deal
-        // Allow owner_id update if provided (Manager/Admin only)
-        let ownerUpdate = '';
-        const params = [stage, id];
+        // 2. Dynamic Update Construction
+        const fields = [];
+        const values = [];
+        let idx = 1;
 
+        if (stage !== undefined) { fields.push(`stage = $${idx++}`); values.push(stage); }
+        if (remark !== undefined) { fields.push(`remark = $${idx++}`); values.push(remark); }
+        if (priority !== undefined) { fields.push(`priority = $${idx++}`); values.push(priority); }
+        if (frequency !== undefined) { fields.push(`frequency = $${idx++}`); values.push(frequency); }
+        if (value !== undefined) { fields.push(`value = $${idx++}`); values.push(value); }
+        if (probability !== undefined) { fields.push(`probability = $${idx++}`); values.push(probability); }
+        if (closing_date !== undefined) { fields.push(`closing_date = $${idx++}`); values.push(closing_date); }
+
+        // Allow owner_id update if provided (Manager/Admin only)
         if (req.body.owner_id && (req.user.role === 'admin' || req.user.role === 'manager')) {
-            ownerUpdate = ', owner_id = $3';
-            params.push(req.body.owner_id);
+            fields.push(`owner_id = $${idx++}`);
+            values.push(req.body.owner_id);
         }
 
-        const result = await pool.query(
-            `UPDATE deals SET stage = $1, updated_at = NOW() ${ownerUpdate} WHERE deal_id = $2 RETURNING *`,
-            params
-        );
+        fields.push(`updated_at = NOW()`);
 
+        if (fields.length === 1) { // Only updated_at
+            return res.status(400).json({ error: 'No update fields provided' });
+        }
+
+        values.push(id);
+        const query = `UPDATE deals SET ${fields.join(', ')} WHERE deal_id = $${idx} RETURNING *`;
+
+        const result = await pool.query(query, values);
         const updatedDeal = result.rows[0];
 
-        // 3. Log Activity (FR-B.1)
-        let logContent = `Deal moved to stage: ${stage} by ${req.user.email}`;
-        if (ownerUpdate) logContent += ` (Reassigned ownership)`;
-
-        await pool.query(
-            `INSERT INTO activities (deal_id, type, content) VALUES ($1, 'NOTE', $2)`,
-            [id, logContent]
-        );
+        // 3. Log Activity
+        if (stage && stage !== currentDeal.stage) {
+            let logContent = `Deal moved to stage: ${stage} by ${req.user.email}`;
+            await pool.query(
+                `INSERT INTO activities (deal_id, type, content) VALUES ($1, 'NOTE', $2)`,
+                [id, logContent]
+            );
+        }
+        if (remark && remark !== currentDeal.remark) {
+            await pool.query(
+                `INSERT INTO activities (deal_id, type, content) VALUES ($1, 'NOTE', $2)`,
+                [id, `Remark updated by ${req.user.email}: ${remark}`]
+            );
+        }
 
         // 4. Audit Log
-        await req.audit('UPDATE', 'DEAL', id, { stage: currentDeal.stage }, updatedDeal);
+        await req.audit('UPDATE', 'DEAL', id, { ...req.body }, updatedDeal);
 
         res.json(updatedDeal);
     } catch (err) {

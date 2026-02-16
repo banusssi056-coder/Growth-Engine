@@ -71,7 +71,7 @@ export default function Settings() {
         if (!session) return;
 
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -79,9 +79,16 @@ export default function Settings() {
                 },
                 body: JSON.stringify({ manager_id: newManagerId || null })
             });
-            setUsers(users.map(user => user.user_id === userId ? { ...user, manager_id: newManagerId } : user));
+
+            if (res.ok) {
+                setUsers(users.map(user => user.user_id === userId ? { ...user, manager_id: newManagerId } : user));
+            } else {
+                const err = await res.json();
+                alert(`Failed to update manager: ${err.error || 'Unknown error'}`);
+            }
         } catch (err) {
             console.error(err);
+            alert('Failed to connect to server');
         }
     }
 

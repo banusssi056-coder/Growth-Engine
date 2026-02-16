@@ -161,9 +161,9 @@ export default function Settings() {
                         </h2>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-600 font-medium">
+                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table className="w-full text-left text-sm relative">
+                            <thead className="bg-slate-50 text-slate-600 font-medium sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th className="px-6 py-3">User</th>
                                     <th className="px-6 py-3">Role</th>

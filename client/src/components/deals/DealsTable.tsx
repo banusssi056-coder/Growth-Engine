@@ -58,6 +58,28 @@ export function DealsTable({ deals }: DealsTableProps) {
         }
     };
 
+    const handleRemarkChange = (dealId: string, value: string) => {
+        setLocalDeals(prev => prev.map(d => d.deal_id === dealId ? { ...d, remark: value } : d));
+    };
+
+    const handleRemarkBlur = async (dealId: string, value: string) => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ remark: value })
+            });
+        } catch (err) {
+            console.error("Failed to update remark", err);
+        }
+    };
+
     if (!localDeals || localDeals.length === 0) {
         return <div className="p-12 text-center text-slate-500 bg-white rounded-lg border border-dashed border-slate-300">No deals found. Create a deal to get started.</div>;
     }
@@ -103,7 +125,18 @@ export function DealsTable({ deals }: DealsTableProps) {
                                     {STAGES.map(s => <option key={s} value={s} className="bg-white text-slate-800">{s}</option>)}
                                 </select>
                             </td>
-                            <td className="px-3 py-2 text-slate-500 italic text-xs max-w-xs truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:z-10 bg-white">{deal.remark || ''}</td>
+                            <td className="px-3 py-2 text-slate-500 bg-white">
+                                <input
+                                    type="text"
+                                    value={deal.remark || ''}
+                                    onChange={(e) => handleRemarkChange(deal.deal_id, e.target.value)}
+                                    onBlur={(e) => handleRemarkBlur(deal.deal_id, e.target.value)}
+                                    // Submit on Enter
+                                    onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                                    className="w-full border-none bg-transparent text-xs text-slate-500 italic focus:ring-0 placeholder:text-slate-300 p-0"
+                                    placeholder="Add remark..."
+                                />
+                            </td>
                         </tr>
                     ))}
                 </tbody>

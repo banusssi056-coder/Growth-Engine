@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface Deal {
     deal_id: string;
@@ -18,8 +19,46 @@ interface DealsTableProps {
     deals: Deal[];
 }
 
+const STAGES = [
+    "1- New Lead",
+    "2- Discussing, RFQing",
+    "3- Presenting, Quoting",
+    "4- Negotiating, Closing",
+    "5- WIP",
+    "6- Invoice, Payment pending",
+    "7- Hold",
+    "8- Paid",
+    "9- Lost"
+];
+
 export function DealsTable({ deals }: DealsTableProps) {
-    if (!deals || deals.length === 0) {
+    const [localDeals, setLocalDeals] = useState(deals);
+
+    useEffect(() => {
+        setLocalDeals(deals);
+    }, [deals]);
+
+    const handleStageChange = async (dealId: string, newStage: string) => {
+        setLocalDeals(prev => prev.map(d => d.deal_id === dealId ? { ...d, stage: newStage } : d));
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ stage: newStage })
+            });
+        } catch (err) {
+            console.error("Failed to update stage", err);
+        }
+    };
+
+    if (!localDeals || localDeals.length === 0) {
         return <div className="p-12 text-center text-slate-500 bg-white rounded-lg border border-dashed border-slate-300">No deals found. Create a deal to get started.</div>;
     }
 
@@ -40,7 +79,7 @@ export function DealsTable({ deals }: DealsTableProps) {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
-                    {deals.map((deal) => (
+                    {localDeals.map((deal) => (
                         <tr key={deal.deal_id} className="hover:bg-slate-50 transition-colors group">
                             <td className="px-3 py-2 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50">{deal.priority || '-'}</td>
                             <td className="px-3 py-2 font-medium text-slate-900 border-r border-slate-100">{deal.name}</td>
@@ -52,13 +91,17 @@ export function DealsTable({ deals }: DealsTableProps) {
                             </td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100">{deal.frequency || '-'}</td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100">
-                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium 
+                                <select
+                                    value={deal.stage}
+                                    onChange={(e) => handleStageChange(deal.deal_id, e.target.value)}
+                                    className={`block w-full rounded border-0 py-1 pl-2 text-[10px] font-medium cursor-pointer focus:ring-1 focus:ring-inset focus:ring-slate-300
                                     ${deal.stage.startsWith('1') || deal.stage.startsWith('Lead') ? 'bg-blue-50 text-blue-700' :
-                                        deal.stage.startsWith('8') || deal.stage.includes('Paid') ? 'bg-emerald-50 text-emerald-700' :
-                                            deal.stage.startsWith('9') || deal.stage.includes('Lost') ? 'bg-red-50 text-red-700' :
-                                                'bg-amber-50 text-amber-700'}`}>
-                                    {deal.stage}
-                                </span>
+                                            deal.stage.startsWith('8') || deal.stage.includes('Paid') ? 'bg-emerald-50 text-emerald-700' :
+                                                deal.stage.startsWith('9') || deal.stage.includes('Lost') ? 'bg-red-50 text-red-700' :
+                                                    'bg-amber-50 text-amber-700'}`}
+                                >
+                                    {STAGES.map(s => <option key={s} value={s} className="bg-white text-slate-800">{s}</option>)}
+                                </select>
                             </td>
                             <td className="px-3 py-2 text-slate-500 italic text-xs max-w-xs truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:z-10 bg-white">{deal.remark || ''}</td>
                         </tr>

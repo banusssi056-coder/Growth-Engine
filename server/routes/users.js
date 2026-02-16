@@ -21,16 +21,36 @@ router.patch('/:id', authorize(['admin']), async (req, res) => {
     const { role, is_active, manager_id } = req.body;
 
     try {
+        const fields = [];
+        const values = [];
+        let idx = 1;
+
+        if (role !== undefined) {
+            fields.push(`role = $${idx++}`);
+            values.push(role);
+        }
+        if (is_active !== undefined) {
+            fields.push(`is_active = $${idx++}`);
+            values.push(is_active);
+        }
+        if (manager_id !== undefined) {
+            fields.push(`manager_id = $${idx++}`);
+            values.push(manager_id);
+        }
+
+        if (fields.length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided for update' });
+        }
+
+        values.push(id);
         const query = `
             UPDATE users 
-            SET role = COALESCE($1, role), 
-                is_active = COALESCE($2, is_active),
-                manager_id = COALESCE($3, manager_id)
-            WHERE user_id = $4
+            SET ${fields.join(', ')}
+            WHERE user_id = $${idx}
             RETURNING user_id, email, role, is_active, manager_id
         `;
 
-        const result = await req.db.query(query, [role, is_active, manager_id, id]);
+        const result = await req.db.query(query, values);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });

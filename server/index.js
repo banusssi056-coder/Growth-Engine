@@ -31,25 +31,31 @@ const startServer = async () => {
     // FIX: Explicitly resolve hostname to IPv4 to prevent ENETUNREACH on IPv6-only environments (like Render)
     try {
         const { URL } = require('url');
-        const { resolve4 } = require('dns').promises;
         const parsed = new URL(rawUrl);
 
         // Resolve if it's a hostname (not IP) and not localhost
         if (parsed.hostname && parsed.hostname !== 'localhost' && !parsed.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
-            console.log(`[DNS] Resolving Database Host: ${parsed.hostname}...`);
+            console.log(`[DNS] Resolving Host: ${parsed.hostname} via Google DNS...`);
             try {
+                // Use Google DNS servers (8.8.8.8) to ensure we get an IPv4 A-record (Bypassing Render ENODATA)
+                dns.setServers(['8.8.8.8', '8.8.4.4']);
+
+                const { resolve4 } = dns.promises;
                 const addresses = await resolve4(parsed.hostname);
+
                 if (addresses && addresses.length > 0) {
                     console.log(`[DNS] Resolved to IPv4: ${addresses[0]}`);
                     parsed.hostname = addresses[0];
                     connectionString = parsed.toString();
+                } else {
+                    console.warn('[DNS] Google DNS returned no IPv4 addresses.');
                 }
             } catch (e) {
-                console.warn(`[DNS] ipv4 resolution failed: ${e.message}`);
+                console.warn(`[DNS] IPv4 Resolution Failed: ${e.message}`);
             }
         }
     } catch (err) {
-        console.warn('[DNS] Resolution warning:', err.message);
+        console.warn('[DNS] Setup Error:', err.message);
     }
 
     const poolConfig = {

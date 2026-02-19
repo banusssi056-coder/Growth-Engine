@@ -14,13 +14,29 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
     const [domain, setDomain] = useState('');
     const [industry, setIndustry] = useState('');
     const [revenue, setRevenue] = useState('');
+    const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
 
         try {
+            // Check if company with same name already exists
+            const { count, error: countError } = await supabase
+                .from("companies")
+                .select("comp_id", { count: 'exact', head: true })
+                .ilike("name", name);
+
+            if (countError) throw countError;
+
+            if (count && count > 0) {
+                setError(`Company with name "${name}" already exists.`);
+                setLoading(false);
+                return;
+            }
+
             const { error } = await supabase.from("companies").insert([
                 {
                     name: name,
@@ -40,7 +56,7 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
             setRevenue('');
         } catch (err) {
             console.error(err);
-            alert(`Failed to create company: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            setError(`Failed to create company: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
             setLoading(false);
         }
@@ -56,9 +72,17 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                 </button>
                 <h2 className="mb-4 text-xl font-bold text-slate-900">Add New Company</h2>
 
+                {error && (
+                    <div className="mb-4 p-3 rounded bg-red-50 text-red-600 text-sm border border-red-200">
+                        {error}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700">Company Name</label>
+                        <label className="block text-sm font-medium text-slate-700">
+                            Company Name <span className="text-red-500">*</span>
+                        </label>
                         <input
                             type="text"
                             required
@@ -69,9 +93,12 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700">Domain</label>
+                        <label className="block text-sm font-medium text-slate-700">
+                            Domain <span className="text-red-500">*</span>
+                        </label>
                         <input
                             type="text"
+                            required
                             value={domain}
                             onChange={e => setDomain(e.target.value)}
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -79,9 +106,12 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700">Industry</label>
+                        <label className="block text-sm font-medium text-slate-700">
+                            Industry <span className="text-red-500">*</span>
+                        </label>
                         <input
                             type="text"
+                            required
                             value={industry}
                             onChange={e => setIndustry(e.target.value)}
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -89,9 +119,12 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700">Annual Revenue ($)</label>
+                        <label className="block text-sm font-medium text-slate-700">
+                            Annual Revenue ($) <span className="text-red-500">*</span>
+                        </label>
                         <input
                             type="number"
+                            required
                             value={revenue}
                             onChange={e => setRevenue(e.target.value)}
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -101,8 +134,8 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
 
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                        disabled={loading || !name || !domain || !industry || !revenue}
+                        className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Adding...' : 'Add Company'}
                     </button>

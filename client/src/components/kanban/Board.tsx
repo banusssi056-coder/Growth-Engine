@@ -16,6 +16,7 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { DealCard } from './DealCard'; // Only DealCard needed for overlay
 import { Column } from './Column';
+import { supabase } from '../../lib/supabase';
 
 interface Deal {
     deal_id: string;
@@ -83,9 +84,12 @@ export function Board({ initialDeals, userRole }: BoardProps) {
         );
     };
 
+    const [startContainer, setStartContainer] = useState<string | null>(null);
+
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
         setActiveId(active.id as string);
+        setStartContainer(findContainer(active.id as string) as string);
     };
 
     const handleDragOver = (event: DragOverEvent) => {
@@ -137,6 +141,7 @@ export function Board({ initialDeals, userRole }: BoardProps) {
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
+        // Current container (after DragOver updates)
         const activeContainer = findContainer(active.id as string);
         const overContainer = findContainer(over?.id as string);
 
@@ -146,32 +151,42 @@ export function Board({ initialDeals, userRole }: BoardProps) {
             (activeContainer === overContainer && active.id === over?.id)
         ) {
             setActiveId(null);
+            setStartContainer(null);
             return;
         }
 
-        // API Call to update stage
-        if (activeContainer !== overContainer) {
+        // API Call to update stage if changed
+        if (startContainer && activeContainer && activeContainer !== startContainer) {
             try {
-                // Optimistic update already happened in DragOver mostly, but let's confirm placement
-                // In a real app we would call API here
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${active.id}`, {
+                // Get session for Auth
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    console.error("No active session to update deal");
+                    return;
+                }
+
+                // Optimistic update already happened in DragOver
+                // We persist this change to the database
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${active.id}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ stage: overContainer }) // Target stage is the new container key
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ stage: activeContainer }) // activeContainer is the new stage
                 });
+
+                if (!response.ok) {
+                    console.error("Failed to update deal stage", await response.text());
+                    // Potential future improvement: revert state on failure
+                }
             } catch (err) {
                 console.error("Failed to update deal stage", err);
-                // Revert state if needed (not implemented for simplicity)
             }
         }
 
-        setItems((prev) => {
-            // Final reordering if needed within same column
-            // Omitted for brevity as DragOver handles the bulk of it
-            return prev;
-        });
-
         setActiveId(null);
+        setStartContainer(null);
     };
 
     const dropAnimation = {

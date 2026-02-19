@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Building } from 'lucide-react';
+import { Plus, Building, Trash2 } from 'lucide-react';
 import { CreateCompanyModal } from '@/components/contacts/CreateCompanyModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -39,6 +39,26 @@ export default function Contacts() {
         setCompanies(prev => [newCompany, ...prev] as any);
     };
 
+    const handleDeleteCompany = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete "${name}"? This will also remove associated deals and contacts.`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('companies')
+                .delete()
+                .eq('comp_id', id);
+
+            if (error) throw error;
+
+            setCompanies(prev => prev.filter(c => c.comp_id !== id));
+        } catch (err) {
+            console.error("Error deleting company", err);
+            alert(`Failed to delete company: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+    };
+
     return (
         <ProtectedRoute>
             <div className="flex flex-col h-full bg-slate-50 p-6 overflow-hidden">
@@ -67,11 +87,12 @@ export default function Contacts() {
                                     <th className="px-6 py-3 font-semibold">Industry</th>
                                     <th className="px-6 py-3 font-semibold">Revenue</th>
                                     <th className="px-6 py-3 font-semibold">Added</th>
+                                    <th className="px-6 py-3 font-semibold text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {companies.map((company: any) => (
-                                    <tr key={company.comp_id} className="hover:bg-slate-50">
+                                    <tr key={company.comp_id} className="hover:bg-slate-50 group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-50 text-blue-600">
@@ -90,11 +111,20 @@ export default function Contacts() {
                                         <td className="px-6 py-4 text-slate-500">
                                             {new Date(company.created_at).toLocaleDateString()}
                                         </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={() => handleDeleteCompany(company.comp_id, company.name)}
+                                                className="text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-2 rounded hover:bg-red-50"
+                                                title="Delete Company"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                                 {companies.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                                        <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
                                             No companies found. Create one to get started!
                                         </td>
                                     </tr>

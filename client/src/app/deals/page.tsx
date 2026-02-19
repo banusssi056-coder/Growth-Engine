@@ -86,15 +86,23 @@ export default function Deals() {
                                 ${deals.reduce((acc, d: any) => acc + Number(d.value), 0).toLocaleString()}
                             </p>
                         </div>
-                        {userRole !== 'intern' && (
+                        <div className="flex gap-2">
                             <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                                onClick={() => window.location.href = '/'}
+                                className="flex items-center gap-2 rounded-md bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                             >
-                                <Plus size={16} />
-                                New Deal
+                                Back to Home
                             </button>
-                        )}
+                            {userRole !== 'intern' && (
+                                <button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                                >
+                                    <Plus size={16} />
+                                    New Deal
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 

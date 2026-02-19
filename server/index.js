@@ -193,6 +193,13 @@ app.post('/api/companies', authorize(['admin', 'manager', 'rep']), async (req, r
     const { name, domain, industry, revenue } = req.body;
     try {
         console.log('[CreateCompany] Starting...');
+
+        // Check for duplicate
+        const existing = await pool.query('SELECT comp_id FROM companies WHERE name ILIKE $1', [name]);
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ error: 'Company name already exists' });
+        }
+
         const result = await pool.query(
             `INSERT INTO companies (name, domain, industry, revenue) 
        VALUES ($1, $2, $3, $4) RETURNING *`,

@@ -285,13 +285,22 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                         </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                        {loading ? 'Creating...' : 'Create Deal'}
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="w-1/3 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-2/3 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                            {loading ? 'Creating...' : 'Create Deal'}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

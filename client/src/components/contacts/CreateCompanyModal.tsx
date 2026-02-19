@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X } from 'lucide-react';
+import { CURRENCY_CONFIG } from '@/lib/currency';
 
 interface CreateCompanyModalProps {
     isOpen: boolean;
@@ -120,7 +121,7 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700">
-                            Annual Revenue ($) <span className="text-red-500">*</span>
+                            Annual Revenue ({CURRENCY_CONFIG.symbol}) <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="number"

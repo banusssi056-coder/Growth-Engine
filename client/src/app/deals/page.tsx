@@ -80,29 +80,16 @@ export default function Deals() {
                                 <LayoutGrid size={16} />
                             </button>
                         </div>
-                        <div className="text-right hidden sm:block">
-                            <p className="text-xs text-slate-500">Total Pipeline</p>
-                            <p className="font-bold text-slate-800">
-                                ${deals.reduce((acc, d: any) => acc + Number(d.value), 0).toLocaleString()}
-                            </p>
-                        </div>
-                        <div className="flex gap-2">
+
+                        {userRole !== 'intern' && (
                             <button
-                                onClick={() => window.location.href = '/'}
-                                className="flex items-center gap-2 rounded-md bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
                             >
-                                Back to Home
+                                <Plus size={16} />
+                                New Deal
                             </button>
-                            {userRole !== 'intern' && (
-                                <button
-                                    onClick={() => setIsCreateModalOpen(true)}
-                                    className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
-                                >
-                                    <Plus size={16} />
-                                    New Deal
-                                </button>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
 

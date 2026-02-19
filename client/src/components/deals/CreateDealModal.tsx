@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X } from 'lucide-react';
+import { CURRENCY_CONFIG } from '@/lib/currency';
 
 interface Company {
     comp_id: string;
@@ -231,7 +232,7 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700">Value ($)</label>
+                            <label className="block text-sm font-medium text-slate-700">Value ({CURRENCY_CONFIG.symbol})</label>
                             <input
                                 type="number"
                                 required
@@ -284,22 +285,13 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                         </div>
                     </div>
 
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            onClick={() => window.location.href = '/'}
-                            className="w-1/3 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                            Back to Home
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-2/3 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                        >
-                            {loading ? 'Creating...' : 'Create Deal'}
-                        </button>
-                    </div>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                        {loading ? 'Creating...' : 'Create Deal'}
+                    </button>
                 </form>
             </div>
         </div>

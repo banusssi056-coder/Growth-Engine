@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { formatCurrency } from '@/lib/currency';
 
 interface Deal {
     deal_id: string;
@@ -108,8 +109,8 @@ export function DealsTable({ deals }: DealsTableProps) {
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100">{deal.company_name || '-'}</td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100 capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</td>
-                            <td className="px-3 py-2 text-right font-medium text-slate-900 border-r border-slate-100">
-                                ₹{Number(deal.value).toLocaleString()}
+                            <td className="text-right font-medium text-slate-900 border-r border-slate-100 px-3 py-2">
+                                {formatCurrency(deal.value)}
                             </td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100">{deal.frequency || '-'}</td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100">

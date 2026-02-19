@@ -4,6 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
 
 export interface Deal {
     deal_id: string;
@@ -71,7 +72,7 @@ export function DealCard({ deal, onLogActivity, isOverlay }: DealCardProps) {
 
                 <div className="flex justify-between items-end mt-2">
                     <div className="font-bold text-lg">
-                        ${Number(deal.value).toLocaleString()}
+                        {formatCurrency(deal.value)}
                         {deal.frequency && (
                             <span className="text-[10px] font-normal text-slate-400 ml-1">
                                 / {deal.frequency}

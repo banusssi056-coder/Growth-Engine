@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { DealsTable } from '@/components/deals/DealsTable';
 import { supabase } from '../../lib/supabase';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { formatCurrency } from '@/lib/currency';
 
 export default function Dashboard() {
     const [deals, setDeals] = useState<any[]>([]);
@@ -77,13 +78,13 @@ export default function Dashboard() {
                         <div className="text-right">
                             <div className="text-sm text-slate-500">Total Pipeline</div>
                             <div className="text-xl font-bold text-slate-900">
-                                ${stats?.total_pipeline_value ? Number(stats.total_pipeline_value).toLocaleString() : '0.00'}
+                                {formatCurrency(stats?.total_pipeline_value)}
                             </div>
                         </div>
                         <div className="text-right">
                             <div className="text-sm text-slate-500">Weighted Forecast</div>
                             <div className="text-xl font-bold text-emerald-600">
-                                ${stats?.expected_revenue ? Number(stats.expected_revenue).toLocaleString() : '0.00'}
+                                {formatCurrency(stats?.expected_revenue)}
                             </div>
                         </div>
                     </div>

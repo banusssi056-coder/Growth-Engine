@@ -120,33 +120,35 @@ export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
             <table className="w-full text-sm text-left border-collapse">
                 <thead>
                     <tr className="border-b font-semibold text-slate-800 text-xs uppercase tracking-wider">
-                        <th className="px-3 py-2 bg-orange-500 text-white w-16 text-center border-r border-slate-200">LH Prio</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-48 border-r border-slate-200">Solid Deal</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-40 border-r border-slate-200">Offering</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-28 border-r border-slate-200">Level</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-40 border-r border-slate-200">Who Pays</th>
-                        <th className="px-3 py-2 bg-orange-500 text-white w-32 border-r border-slate-200">Sales Force</th>
-                        <th className="px-3 py-2 bg-amber-100 text-slate-800 text-right w-32 border-r border-slate-200">Amount</th>
+                        <th className="px-2 py-2 bg-orange-500 text-white w-14 text-center border-r border-slate-200">Prio</th>
+                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-44 border-r border-slate-200">Solid Deal</th>
+                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-36 border-r border-slate-200">Offering</th>
+                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-24 border-r border-slate-200">Level</th>
+                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-36 border-r border-slate-200">Who Pays</th>
+                        <th className="px-3 py-2 bg-orange-500 text-white w-28 border-r border-slate-200">Sales Force</th>
+                        <th className="px-3 py-2 bg-amber-100 text-slate-800 text-right w-28 border-r border-slate-200">Amount</th>
                         <th className="px-3 py-2 bg-lime-300 text-slate-800 w-24 border-r border-slate-200">Frequency</th>
-                        <th className="px-3 py-2 bg-orange-500 text-white w-40 border-r border-slate-200">Stage</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 min-w-[200px]">Remark</th>
+                        {/* Stage needs enough width to show the full stage name in the dropdown */}
+                        <th className="px-3 py-2 bg-orange-500 text-white border-r border-slate-200" style={{ minWidth: '220px' }}>Stage</th>
+                        {/* Remark fills all remaining space */}
+                        <th className="px-3 py-2 bg-lime-300 text-slate-800" style={{ minWidth: '220px' }}>Remark</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
                     {localDeals.map((deal) => (
-                        <tr key={deal.deal_id} className="hover:bg-slate-50 transition-colors group">
-                            <td className="px-3 py-2 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50">{deal.priority || '-'}</td>
-                            <td className="px-3 py-2 font-medium text-slate-900 border-r border-slate-100">{deal.name}</td>
-                            <td className="px-3 py-2 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
+                        <tr key={deal.deal_id} className="hover:bg-slate-50 transition-colors group align-top">
+                            <td className="px-2 py-2.5 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50 text-xs">{deal.priority || '-'}</td>
+                            <td className="px-3 py-2.5 font-medium text-slate-900 border-r border-slate-100 text-sm">{deal.name}</td>
+                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
                             {/* Level badge */}
-                            <td className="px-3 py-2 border-r border-slate-100">
+                            <td className="px-3 py-2.5 border-r border-slate-100">
                                 {deal.level ? (
                                     <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide
                                         ${deal.level === 'Enterprise'
                                             ? 'bg-purple-100 text-purple-700'
                                             : deal.level === 'Premium'
                                                 ? 'bg-amber-100 text-amber-700'
-                                                : 'bg-slate-100 text-slate-600' /* Standard */
+                                                : 'bg-slate-100 text-slate-600'
                                         }`}
                                     >
                                         {deal.level}
@@ -155,39 +157,64 @@ export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
                                     <span className="text-slate-400 text-xs">-</span>
                                 )}
                             </td>
-                            <td className="px-3 py-2 text-slate-600 border-r border-slate-100">{deal.company_name || '-'}</td>
-                            <td className="px-3 py-2 text-slate-600 border-r border-slate-100 capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</td>
-                            <td className="text-right font-medium text-slate-900 border-r border-slate-100 px-3 py-2">
+                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.company_name || '-'}</td>
+                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</td>
+                            <td className="text-right font-medium text-slate-900 border-r border-slate-100 px-3 py-2.5 text-sm">
                                 {formatCurrency(deal.value)}
                             </td>
-                            <td className="px-3 py-2 text-slate-600 border-r border-slate-100">{deal.frequency || '-'}</td>
-                            <td className="px-3 py-2 text-slate-600 border-r border-slate-100">
+                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.frequency || '-'}</td>
+
+                            {/* ── Stage dropdown — wide enough to show full stage name ── */}
+                            <td className="px-2 py-2 border-r border-slate-100">
                                 <select
                                     value={deal.stage}
                                     onChange={(e) => handleStageChange(deal.deal_id, e.target.value)}
-                                    className={`block w-full rounded border-0 py-1 pl-2 text-[10px] font-medium cursor-pointer focus:ring-1 focus:ring-inset focus:ring-slate-300
-                                    ${deal.stage.startsWith('1') || deal.stage.startsWith('Lead') ? 'bg-blue-50 text-blue-700' :
-                                            deal.stage.startsWith('8') || deal.stage.includes('Paid') ? 'bg-emerald-50 text-emerald-700' :
-                                                deal.stage.startsWith('9') || deal.stage.includes('Lost') ? 'bg-red-50 text-red-700' :
-                                                    'bg-amber-50 text-amber-700'}`}
+                                    style={{ minWidth: '200px' }}
+                                    className={`block w-full rounded py-1.5 px-2 text-xs font-medium cursor-pointer
+                                        border focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-400
+                                        ${deal.stage.startsWith('1') ? 'bg-blue-50    text-blue-800    border-blue-200' :
+                                            deal.stage.startsWith('8') ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                                                deal.stage.startsWith('9') ? 'bg-red-50     text-red-800     border-red-200' :
+                                                    deal.stage.startsWith('7') ? 'bg-slate-100  text-slate-700   border-slate-300' :
+                                                        'bg-amber-50   text-amber-800   border-amber-200'}
+                                    `}
                                 >
                                     {STAGES.map(s => <option key={s} value={s} className="bg-white text-slate-800">{s}</option>)}
                                 </select>
                             </td>
-                            <td className="px-3 py-2 text-slate-500 bg-white">
-                                <input
-                                    type="text"
+
+                            {/* ── Remark — auto-growing textarea, shows full text ── */}
+                            <td className="px-2 py-2 bg-white">
+                                <textarea
                                     value={deal.remark || ''}
-                                    onChange={(e) => handleRemarkChange(deal.deal_id, e.target.value)}
-                                    onBlur={(e) => handleRemarkBlur(deal.deal_id, e.target.value)}
-                                    // Submit on Enter
-                                    onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                                    className="w-full border-none bg-transparent text-xs text-slate-500 italic focus:ring-0 placeholder:text-slate-300 p-0"
-                                    placeholder="Add remark..."
+                                    rows={1}
+                                    onChange={(e) => {
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                        handleRemarkChange(deal.deal_id, e.target.value);
+                                    }}
+                                    onFocus={(e) => {
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.height = '';
+                                        handleRemarkBlur(deal.deal_id, e.target.value);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            (e.target as HTMLTextAreaElement).blur();
+                                        }
+                                    }}
+                                    style={{ minWidth: '200px' }}
+                                    className="w-full resize-none overflow-hidden border-none bg-transparent text-xs text-slate-600 focus:ring-0 placeholder:text-slate-300 p-0 leading-relaxed"
+                                    placeholder="Add remark…"
                                 />
                             </td>
                         </tr>
                     ))}
+
                 </tbody>
             </table>
         </div>

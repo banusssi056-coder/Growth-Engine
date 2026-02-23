@@ -1,23 +1,18 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-    DndContext,
-    closestCorners,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    DragOverlay,
-    defaultDropAnimationSideEffects,
-    DragStartEvent,
-    DragOverEvent,
-    DragEndEvent,
+    DndContext, closestCorners, KeyboardSensor, PointerSensor,
+    useSensor, useSensors, DragOverlay, defaultDropAnimationSideEffects,
+    DragStartEvent, DragOverEvent, DragEndEvent,
 } from '@dnd-kit/core';
-import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { DealCard } from './DealCard'; // Only DealCard needed for overlay
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { DealCard } from './DealCard';
 import { Column } from './Column';
+import { ActivityLogPanel } from './ActivityLogPanel';
 import { supabase } from '../../lib/supabase';
+import { Loader2 } from 'lucide-react';
 
+// ── Types ──────────────────────────────────────────────────────────────────────
 interface Deal {
     deal_id: string;
     name: string;
@@ -32,181 +27,175 @@ interface Deal {
     remark?: string;
 }
 
+interface StageConfig {
+    stage_id: string;
+    name: string;
+    color: string;
+    position: number;
+    probability: number;
+}
+
 interface BoardProps {
     initialDeals: Deal[];
     userRole: string;
     onDealUpdated?: (dealId: string, patch: Partial<Deal>) => void;
 }
 
-const STAGES = [
-    '1- New Lead',
-    '2- Discussing, RFQing',
-    '3- Presenting, Quoting',
-    '4- Negotiating, Closing',
-    '5- WIP',
-    '6- Invoice, Payment pending',
-    '7- Hold',
-    '8- Paid',
-    '9- Lost'
-];
-
-// Probability (%) automatically assigned per stage for weighted forecast
-const STAGE_PROBABILITIES: Record<string, number> = {
-    '1- New Lead': 10,
-    '2- Discussing, RFQing': 20,
-    '3- Presenting, Quoting': 40,
-    '4- Negotiating, Closing': 60,
-    '5- WIP': 80,
-    '6- Invoice, Payment pending': 90,
-    '7- Hold': 10,
-    '8- Paid': 100,
-    '9- Lost': 0,
-};
-
+// ── Board ─────────────────────────────────────────────────────────────────────
 export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
+    // ── Stage config (from DB) ────────────────────────────────────────────────
+    const [stageConfigs, setStageConfigs] = useState<StageConfig[]>([]);
+    const [stagesLoading, setStagesLoading] = useState(true);
+
+    // Build lookup maps from stage configs
+    const stageNames = stageConfigs.map(s => s.name);
+    const stageProbability: Record<string, number> = Object.fromEntries(
+        stageConfigs.map(s => [s.name, s.probability])
+    );
+
+    // Fetch stages from DB (FR-B.1 customizable stages)
+    const fetchStages = useCallback(async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stages`, {
+                headers: { Authorization: `Bearer ${session.access_token}` }
+            });
+            if (res.ok) {
+                const data: StageConfig[] = await res.json();
+                setStageConfigs(data);
+            } else {
+                // Fallback to hardcoded stages if table doesn't exist yet
+                setStageConfigs(FALLBACK_STAGES);
+            }
+        } catch {
+            setStageConfigs(FALLBACK_STAGES);
+        } finally {
+            setStagesLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchStages(); }, [fetchStages]);
+
+    // ── Board items (grouped by stage) ────────────────────────────────────────
     const [items, setItems] = useState<Record<string, Deal[]>>({});
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [startContainer, setStartContainer] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!initialDeals) return;
-
-        // Group deals by stage
-        const grouped = STAGES.reduce((acc, stage) => {
-            // Strictly filter deals with valid IDs and correct stage
-            acc[stage] = initialDeals.filter((d) => d && d.deal_id && d.stage === stage);
+        if (!initialDeals || stageNames.length === 0) return;
+        const grouped = stageNames.reduce((acc, stage) => {
+            acc[stage] = initialDeals.filter(d => d && d.deal_id && d.stage === stage);
             return acc;
         }, {} as Record<string, Deal[]>);
-
-        console.log("Board Initialized with items:", Object.keys(grouped).map(k => `${k}: ${grouped[k].length}`));
         setItems(grouped);
-    }, [initialDeals]);
+    }, [initialDeals, stageNames.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Disable sensors if Intern
-    const isDragEnabled = userRole !== 'intern';
-
+    // ── DnD sensors ──────────────────────────────────────────────────────────
     const sensors = useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
     const findContainer = (id: string) => {
         if (id in items) return id;
-
-        return Object.keys(items).find((key) =>
-            items[key].find((item) => item.deal_id === id)
-        );
+        return Object.keys(items).find(key => items[key].find(item => item.deal_id === id));
     };
 
-    const [startContainer, setStartContainer] = useState<string | null>(null);
-
-    const handleDragStart = (event: DragStartEvent) => {
-        const { active } = event;
+    const handleDragStart = ({ active }: DragStartEvent) => {
         setActiveId(active.id as string);
-        setStartContainer(findContainer(active.id as string) as string);
+        setStartContainer(findContainer(active.id as string) ?? null);
     };
 
-    const handleDragOver = (event: DragOverEvent) => {
-        const { active, over } = event;
+    const handleDragOver = ({ active, over }: DragOverEvent) => {
         const overId = over?.id;
-
         if (!overId || active.id === overId) return;
 
         const activeContainer = findContainer(active.id as string);
         const overContainer = findContainer(overId as string);
 
-        if (!activeContainer || !overContainer || activeContainer === overContainer) {
-            return;
-        }
+        if (!activeContainer || !overContainer || activeContainer === overContainer) return;
 
-        setItems((prev) => {
+        setItems(prev => {
             const activeItems = prev[activeContainer];
             const overItems = prev[overContainer];
-            const activeIndex = activeItems.findIndex((i) => i.deal_id === active.id);
-            const overIndex = overItems.findIndex((i) => i.deal_id === overId);
+            const activeIndex = activeItems.findIndex(i => i.deal_id === active.id);
+            const overIndex = overItems.findIndex(i => i.deal_id === overId);
 
-            let newIndex;
+            let newIndex: number;
             if (overId in prev) {
                 newIndex = overItems.length + 1;
             } else {
-                const isBelowOverItem =
-                    over &&
+                const isBelowOverItem = over &&
                     active.rect.current.translated &&
-                    active.rect.current.translated.top >
-                    over.rect.top + over.rect.height;
-
+                    active.rect.current.translated.top > over.rect.top + over.rect.height;
                 const modifier = isBelowOverItem ? 1 : 0;
                 newIndex = overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
             }
 
             return {
                 ...prev,
-                [activeContainer]: [
-                    ...prev[activeContainer].filter((item) => item.deal_id !== active.id),
-                ],
+                [activeContainer]: prev[activeContainer].filter(item => item.deal_id !== active.id),
                 [overContainer]: [
                     ...prev[overContainer].slice(0, newIndex),
                     items[activeContainer][activeIndex],
-                    ...prev[overContainer].slice(newIndex, prev[overContainer].length),
+                    ...prev[overContainer].slice(newIndex),
                 ],
             };
         });
     };
 
-    const handleDragEnd = async (event: DragEndEvent) => {
-        const { active, over } = event;
-        // Current container (after DragOver updates)
+    const handleDragEnd = async ({ active, over }: DragEndEvent) => {
         const activeContainer = findContainer(active.id as string);
         const overContainer = findContainer(over?.id as string);
 
-        if (
-            !activeContainer ||
-            !overContainer ||
-            (activeContainer === overContainer && active.id === over?.id)
-        ) {
-            setActiveId(null);
-            setStartContainer(null);
-            return;
+        if (!activeContainer || !overContainer ||
+            (activeContainer === overContainer && active.id === over?.id)) {
+            setActiveId(null); setStartContainer(null); return;
         }
 
-        // API Call to update stage if changed
-        if (startContainer && activeContainer && activeContainer !== startContainer) {
+        // Only persist if stage actually changed
+        if (startContainer && activeContainer !== startContainer) {
             try {
-                // Get session for Auth
                 const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                    console.error("No active session to update deal");
-                    return;
-                }
+                if (!session) { console.error('No session'); return; }
 
-                // Optimistic update already happened in DragOver
-                // We persist this change to the database
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${active.id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    // Send both stage and derived probability so weighted forecast recalculates on server
-                    body: JSON.stringify({
-                        stage: activeContainer,
-                        probability: STAGE_PROBABILITIES[activeContainer] ?? 10
-                    })
-                });
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/api/deals/${active.id}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({
+                            stage: activeContainer,
+                            probability: stageProbability[activeContainer] ?? 10
+                        })
+                    }
+                );
 
                 if (!response.ok) {
-                    console.error("Failed to update deal stage", await response.text());
-                    // Potential future improvement: revert state on failure
+                    console.error('Failed to update deal stage', await response.text());
+                    // Roll back optimistic update
+                    setItems(prev => {
+                        const deal = prev[activeContainer]?.find(d => d.deal_id === active.id);
+                        if (!deal || !startContainer) return prev;
+                        return {
+                            ...prev,
+                            [activeContainer]: prev[activeContainer].filter(d => d.deal_id !== active.id),
+                            [startContainer]: [deal, ...(prev[startContainer] || [])],
+                        };
+                    });
                 } else {
-                    // Tell parent so switching to list view reflects this change immediately
+                    // Notify parent so list view also updates
                     onDealUpdated?.(active.id as string, {
                         stage: activeContainer,
-                        probability: STAGE_PROBABILITIES[activeContainer] ?? 10
+                        probability: stageProbability[activeContainer] ?? 10
                     });
                 }
             } catch (err) {
-                console.error("Failed to update deal stage", err);
+                console.error('Failed to update deal stage', err);
             }
         }
 
@@ -216,121 +205,84 @@ export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
 
     const dropAnimation = {
         sideEffects: defaultDropAnimationSideEffects({
-            styles: {
-                active: { opacity: '0.5' },
-            },
+            styles: { active: { opacity: '0.5' } },
         }),
     };
 
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => {
-        setMounted(true);
+    // ── Activity log panel ────────────────────────────────────────────────────
+    const [activityDeal, setActivityDeal] = useState<{ id: string; name: string } | null>(null);
+
+    const handleOpenActivityLog = useCallback((dealId: string, dealName: string) => {
+        setActivityDeal({ id: dealId, name: dealName });
     }, []);
 
-    // Log Activity State
-    const [loggingDealId, setLoggingDealId] = useState<string | null>(null);
-    const [activityType, setActivityType] = useState('NOTE');
-    const [activityContent, setActivityContent] = useState('');
+    // ── Hydration guard ───────────────────────────────────────────────────────
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
 
-    const handleLogActivity = async () => {
-        if (!loggingDealId || !activityContent) return;
-
-        // Dynamic import to avoid SSR issues if needed, or just standard fetch
-        const { supabase } = await import('../../lib/supabase'); // Lazy load client
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session) {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/activities`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({
-                    deal_id: loggingDealId,
-                    type: activityType,
-                    content: activityContent
-                })
-            });
-            // Reset
-            setLoggingDealId(null);
-            setActivityContent('');
-        }
-    };
-
-    if (!mounted) return null;
+    if (!mounted || stagesLoading) {
+        return (
+            <div className="flex h-full items-center justify-center gap-2 text-slate-400">
+                <Loader2 size={18} className="animate-spin" />
+                <span className="text-sm">Loading board…</span>
+            </div>
+        );
+    }
 
     return (
-        <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-        >
-            <div className="flex h-full w-full gap-4 overflow-x-auto p-4">
-                {STAGES.map((stage) => (
-                    <Column
-                        key={stage}
-                        id={stage}
-                        title={stage}
-                        deals={items[stage] || []}
-                        onLogActivity={setLoggingDealId}
-                    />
-                ))}
-            </div>
-            <DragOverlay dropAnimation={dropAnimation}>
-                {activeId ? (() => {
-                    const activeDeal = Object.values(items).flat().find(d => d.deal_id === activeId);
-                    return activeDeal ? <DealCard deal={activeDeal} isOverlay={true} /> : null;
-                })() : null}
-            </DragOverlay>
-
-            {/* Log Activity Modal */}
-            {loggingDealId && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-                        <h2 className="mb-4 text-xl font-bold text-slate-900">Log Activity</h2>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-slate-700">Type</label>
-                            <select
-                                value={activityType}
-                                onChange={(e) => setActivityType(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            >
-                                <option value="NOTE">Note</option>
-                                <option value="CALL">Call</option>
-                                <option value="EMAIL">Email</option>
-                                <option value="MEETING">Meeting</option>
-                            </select>
-                        </div>
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-slate-700">Details</label>
-                            <textarea
-                                value={activityContent}
-                                onChange={(e) => setActivityContent(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                rows={3}
-                                placeholder="What happened?"
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setLoggingDealId(null)}
-                                className="rounded-md px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleLogActivity}
-                                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-                            >
-                                Save Log
-                            </button>
-                        </div>
-                    </div>
+        <>
+            <DndContext
+                sensors={userRole === 'intern' ? [] : sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+            >
+                <div className="flex h-full w-full gap-4 overflow-x-auto p-2 pb-4">
+                    {stageConfigs.map((stage) => (
+                        <Column
+                            key={stage.stage_id}
+                            id={stage.name}
+                            title={stage.name}
+                            color={stage.color}
+                            deals={items[stage.name] || []}
+                            onLogActivity={(dealId) => {
+                                const deal = (items[stage.name] || []).find(d => d.deal_id === dealId);
+                                if (deal) handleOpenActivityLog(deal.deal_id, deal.name);
+                            }}
+                        />
+                    ))}
                 </div>
+
+                <DragOverlay dropAnimation={dropAnimation}>
+                    {activeId ? (() => {
+                        const activeDeal = Object.values(items).flat().find(d => d.deal_id === activeId);
+                        return activeDeal ? <DealCard deal={activeDeal} isOverlay={true} /> : null;
+                    })() : null}
+                </DragOverlay>
+            </DndContext>
+
+            {/* Activity Log slide-in panel */}
+            {activityDeal && (
+                <ActivityLogPanel
+                    dealId={activityDeal.id}
+                    dealName={activityDeal.name}
+                    onClose={() => setActivityDeal(null)}
+                />
             )}
-        </DndContext>
+        </>
     );
 }
+
+// ── Fallback hardcoded stages (used if stages table hasn't been created yet) ──
+const FALLBACK_STAGES: StageConfig[] = [
+    { stage_id: '1', name: '1- New Lead', color: '#3b82f6', position: 1, probability: 10 },
+    { stage_id: '2', name: '2- Discussing, RFQing', color: '#f59e0b', position: 2, probability: 20 },
+    { stage_id: '3', name: '3- Presenting, Quoting', color: '#f59e0b', position: 3, probability: 40 },
+    { stage_id: '4', name: '4- Negotiating, Closing', color: '#f59e0b', position: 4, probability: 60 },
+    { stage_id: '5', name: '5- WIP', color: '#f59e0b', position: 5, probability: 80 },
+    { stage_id: '6', name: '6- Invoice, Payment pending', color: '#f59e0b', position: 6, probability: 90 },
+    { stage_id: '7', name: '7- Hold', color: '#94a3b8', position: 7, probability: 10 },
+    { stage_id: '8', name: '8- Paid', color: '#10b981', position: 8, probability: 100 },
+    { stage_id: '9', name: '9- Lost', color: '#ef4444', position: 9, probability: 0 },
+];

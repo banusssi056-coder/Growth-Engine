@@ -9,17 +9,24 @@ interface ColumnProps {
     id: string;
     title: string;
     deals: any[];
+    color?: string;   // hex colour from stages table
     onLogActivity: (dealId: string) => void;
 }
 
-export function Column({ id, title, deals, onLogActivity }: ColumnProps) {
+export function Column({ id, title, deals, color, onLogActivity }: ColumnProps) {
     const { setNodeRef } = useDroppable({ id });
 
     return (
         <div ref={setNodeRef} className="flex h-full w-80 flex-col rounded-lg bg-slate-50 border border-slate-200">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                <h3 className="font-semibold text-slate-700">{title}</h3>
-                <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            <div
+                className="flex items-center justify-between px-4 py-3 border-b border-slate-100"
+                style={color ? { borderLeftWidth: 3, borderLeftColor: color, borderLeftStyle: 'solid' } : {}}
+            >
+                <h3 className="font-semibold text-slate-700 text-sm truncate pr-2">{title}</h3>
+                <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold text-white"
+                    style={{ backgroundColor: color ?? '#94a3b8' }}
+                >
                     {deals.length}
                 </span>
             </div>

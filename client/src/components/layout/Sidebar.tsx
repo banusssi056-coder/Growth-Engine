@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { SearchTriggerButton } from './GlobalSearch';
+import { NotificationBell } from './NotificationBell';
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
@@ -78,8 +79,9 @@ export function Sidebar() {
 
     return (
         <div className="flex h-full w-64 flex-col bg-slate-900 text-white">
-            <div className="flex h-16 items-center border-b border-slate-700 px-6">
+            <div className="flex h-16 items-center justify-between border-b border-slate-700 px-4">
                 <span className="text-xl font-bold tracking-tight text-emerald-400">GrowthEngine</span>
+                <NotificationBell />
             </div>
             <div className="flex-1 py-4">
                 <nav className="space-y-1 px-3">

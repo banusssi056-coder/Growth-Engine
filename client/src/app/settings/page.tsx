@@ -2,9 +2,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Download, Shield, ShieldAlert, Check, X } from 'lucide-react';
-import { cn } from '@/lib/utils'; // Keep local import
+import { Download, Shield, ShieldAlert, Check, X, Layers, Zap } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { StageManager } from '@/components/kanban/StageManager';
+import { WorkflowBuilder } from '@/components/kanban/WorkflowBuilder';
 
 interface User {
     user_id: string;
@@ -19,11 +21,24 @@ export default function Settings() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
+    const [userRole, setUserRole] = useState<string>('rep');
     const router = useRouter();
 
     useEffect(() => {
         fetchUsers();
+        fetchMyRole();
     }, []);
+
+    const fetchMyRole = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+                headers: { Authorization: `Bearer ${session.access_token}` }
+            });
+            if (res.ok) { const me = await res.json(); setUserRole(me.role); }
+        } catch { /* ignore */ }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -242,6 +257,42 @@ export default function Settings() {
                         )}
                     </div>
                 </div>
+                {/* ───────────────── Pipeline Stage Manager (admin only) ── */}
+                {userRole === 'admin' && (
+                    <div className="mt-8 bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-200">
+                            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                <Layers className="text-emerald-600" size={20} />
+                                Pipeline Stage Configuration
+                            </h2>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                                Add, rename, reorder or remove Kanban pipeline stages.
+                                Changes take effect immediately on the board.
+                            </p>
+                        </div>
+                        <div className="p-6">
+                            <StageManager />
+                        </div>
+                    </div>
+                )}
+                {/* ───────────────── Workflow Builder (admin only) ── */}
+                {userRole === 'admin' && (
+                    <div className="mt-8 bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-200">
+                            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                <Zap className="text-violet-600" size={20} />
+                                Workflow Automation Rules
+                            </h2>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                                Define IF/THEN rules to automate deal actions based on field conditions.
+                                Example: IF Deal Value &gt; 50,000 THEN CC Manager.
+                            </p>
+                        </div>
+                        <div className="p-6">
+                            <WorkflowBuilder />
+                        </div>
+                    </div>
+                )}
             </div>
         </ProtectedRoute>
     );

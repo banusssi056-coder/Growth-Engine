@@ -9,6 +9,7 @@ interface Deal {
     owner_email?: string;
     value: number;
     stage: string;
+    probability?: number;
     level?: string;
     offering?: string;
     priority?: number;
@@ -18,6 +19,7 @@ interface Deal {
 
 interface DealsTableProps {
     deals: Deal[];
+    onDealUpdated?: (dealId: string, patch: Partial<Deal>) => void;
 }
 
 const STAGES = [
@@ -45,7 +47,7 @@ const STAGE_PROBABILITIES: Record<string, number> = {
     "9- Lost": 0,
 };
 
-export function DealsTable({ deals }: DealsTableProps) {
+export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
     const [localDeals, setLocalDeals] = useState(deals);
 
     useEffect(() => {
@@ -76,6 +78,9 @@ export function DealsTable({ deals }: DealsTableProps) {
                 // Send both stage AND probability so weighted forecast recalculates on the server
                 body: JSON.stringify({ stage: newStage, probability: newProbability })
             });
+
+            // Tell parent so switching views doesn't revert the change
+            onDealUpdated?.(dealId, { stage: newStage, probability: newProbability });
         } catch (err) {
             console.error("Failed to update stage", err);
         }
@@ -98,6 +103,9 @@ export function DealsTable({ deals }: DealsTableProps) {
                 },
                 body: JSON.stringify({ remark: value })
             });
+
+            // Tell parent so switching views doesn't revert the change
+            onDealUpdated?.(dealId, { remark: value });
         } catch (err) {
             console.error("Failed to update remark", err);
         }

@@ -24,6 +24,7 @@ interface Deal {
     company_name: string;
     value: number;
     stage: string;
+    probability?: number;
     level?: string;
     offering?: string;
     priority?: number;
@@ -34,6 +35,7 @@ interface Deal {
 interface BoardProps {
     initialDeals: Deal[];
     userRole: string;
+    onDealUpdated?: (dealId: string, patch: Partial<Deal>) => void;
 }
 
 const STAGES = [
@@ -61,7 +63,7 @@ const STAGE_PROBABILITIES: Record<string, number> = {
     '9- Lost': 0,
 };
 
-export function Board({ initialDeals, userRole }: BoardProps) {
+export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
     const [items, setItems] = useState<Record<string, Deal[]>>({});
     const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -196,6 +198,12 @@ export function Board({ initialDeals, userRole }: BoardProps) {
                 if (!response.ok) {
                     console.error("Failed to update deal stage", await response.text());
                     // Potential future improvement: revert state on failure
+                } else {
+                    // Tell parent so switching to list view reflects this change immediately
+                    onDealUpdated?.(active.id as string, {
+                        stage: activeContainer,
+                        probability: STAGE_PROBABILITIES[activeContainer] ?? 10
+                    });
                 }
             } catch (err) {
                 console.error("Failed to update deal stage", err);

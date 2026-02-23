@@ -131,7 +131,7 @@ export function NotificationBell() {
             {/* Drop-down panel */}
             {open && (
                 <div
-                    className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 overflow-hidden"
+                    className="absolute left-0 top-full mt-2 w-96 bg-white/95 backdrop-blur-xl rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-200 z-50 overflow-hidden"
                     style={{ animation: 'notifIn 0.18s ease' }}
                 >
                     {/* Header */}

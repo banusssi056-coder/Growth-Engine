@@ -135,11 +135,11 @@ export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
 
             return {
                 ...prev,
-                [activeContainer]: prev[activeContainer].filter(item => item.deal_id !== active.id),
+                [activeContainer]: activeItems.filter(item => item.deal_id !== active.id),
                 [overContainer]: [
-                    ...prev[overContainer].slice(0, newIndex),
-                    items[activeContainer][activeIndex],
-                    ...prev[overContainer].slice(newIndex),
+                    ...overItems.slice(0, newIndex),
+                    activeItems[activeIndex],
+                    ...overItems.slice(newIndex),
                 ],
             };
         });
@@ -147,18 +147,21 @@ export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
 
     const handleDragEnd = async ({ active, over }: DragEndEvent) => {
         const activeContainer = findContainer(active.id as string);
-        const overContainer = findContainer(over?.id as string);
 
-        if (!activeContainer || !overContainer ||
-            (activeContainer === overContainer && active.id === over?.id)) {
+        // Final sanity checks before persistence
+        if (!activeContainer || !startContainer) {
             setActiveId(null); setStartContainer(null); return;
         }
 
         // Only persist if stage actually changed
-        if (startContainer && activeContainer !== startContainer) {
+        if (activeContainer !== startContainer) {
+            console.log(`[Board] Persistence Loop: ${startContainer} -> ${activeContainer} (id: ${active.id})`);
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                if (!session) { console.error('No session'); return; }
+                if (!session) { console.error('[Board] No session'); return; }
+
+                const prob = stageProbability[activeContainer] ?? 10;
+                console.log(`[Board] PATCH /api/deals/${active.id} payload:`, { stage: activeContainer, probability: prob });
 
                 const response = await fetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/api/deals/${active.id}`,
@@ -170,17 +173,19 @@ export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
                         },
                         body: JSON.stringify({
                             stage: activeContainer,
-                            probability: stageProbability[activeContainer] ?? 10
+                            probability: prob
                         })
                     }
                 );
 
                 if (!response.ok) {
-                    console.error('Failed to update deal stage', await response.text());
+                    const statusText = await response.text();
+                    console.error(`[Board] Failed to update: ${response.status} ${statusText}`);
+
                     // Roll back optimistic update
                     setItems(prev => {
                         const deal = prev[activeContainer]?.find(d => d.deal_id === active.id);
-                        if (!deal || !startContainer) return prev;
+                        if (!deal) return prev;
                         return {
                             ...prev,
                             [activeContainer]: prev[activeContainer].filter(d => d.deal_id !== active.id),
@@ -188,14 +193,15 @@ export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
                         };
                     });
                 } else {
+                    console.log(`[Board] Successfully saved stage ${activeContainer}`);
                     // Notify parent so list view also updates
                     onDealUpdated?.(active.id as string, {
                         stage: activeContainer,
-                        probability: stageProbability[activeContainer] ?? 10
+                        probability: prob
                     });
                 }
             } catch (err) {
-                console.error('Failed to update deal stage', err);
+                console.error('[Board] Network or fetch error:', err);
             }
         }
 

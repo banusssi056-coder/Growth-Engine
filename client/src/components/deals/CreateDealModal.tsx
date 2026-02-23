@@ -4,6 +4,19 @@ import { supabase } from '@/lib/supabase';
 import { X } from 'lucide-react';
 import { CURRENCY_CONFIG } from '@/lib/currency';
 
+// Probability (%) assigned automatically per stage
+const STAGE_PROBABILITIES: Record<string, number> = {
+    "1- New Lead": 10,
+    "2- Discussing, RFQing": 20,
+    "3- Presenting, Quoting": 40,
+    "4- Negotiating, Closing": 60,
+    "5- WIP": 80,
+    "6- Invoice, Payment pending": 90,
+    "7- Hold": 10,
+    "8- Paid": 100,
+    "9- Lost": 0,
+};
+
 interface Company {
     comp_id: string;
     name: string;
@@ -260,7 +273,12 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                             <label className="block text-sm font-medium text-slate-700">Stage</label>
                             <select
                                 value={stage}
-                                onChange={e => setStage(e.target.value)}
+                                onChange={e => {
+                                    const newStage = e.target.value;
+                                    setStage(newStage);
+                                    // Auto-update probability when stage changes
+                                    setProbability(String(STAGE_PROBABILITIES[newStage] ?? 10));
+                                }}
                                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             >
                                 <option>1- New Lead</option>

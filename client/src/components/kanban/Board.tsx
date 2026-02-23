@@ -48,6 +48,19 @@ const STAGES = [
     '9- Lost'
 ];
 
+// Probability (%) automatically assigned per stage for weighted forecast
+const STAGE_PROBABILITIES: Record<string, number> = {
+    '1- New Lead': 10,
+    '2- Discussing, RFQing': 20,
+    '3- Presenting, Quoting': 40,
+    '4- Negotiating, Closing': 60,
+    '5- WIP': 80,
+    '6- Invoice, Payment pending': 90,
+    '7- Hold': 10,
+    '8- Paid': 100,
+    '9- Lost': 0,
+};
+
 export function Board({ initialDeals, userRole }: BoardProps) {
     const [items, setItems] = useState<Record<string, Deal[]>>({});
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -173,7 +186,11 @@ export function Board({ initialDeals, userRole }: BoardProps) {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ stage: activeContainer }) // activeContainer is the new stage
+                    // Send both stage and derived probability so weighted forecast recalculates on server
+                    body: JSON.stringify({
+                        stage: activeContainer,
+                        probability: STAGE_PROBABILITIES[activeContainer] ?? 10
+                    })
                 });
 
                 if (!response.ok) {

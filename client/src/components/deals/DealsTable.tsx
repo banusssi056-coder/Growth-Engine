@@ -32,6 +32,19 @@ const STAGES = [
     "9- Lost"
 ];
 
+// Probability (%) assigned automatically when a stage is selected
+const STAGE_PROBABILITIES: Record<string, number> = {
+    "1- New Lead": 10,
+    "2- Discussing, RFQing": 20,
+    "3- Presenting, Quoting": 40,
+    "4- Negotiating, Closing": 60,
+    "5- WIP": 80,
+    "6- Invoice, Payment pending": 90,
+    "7- Hold": 10,
+    "8- Paid": 100,
+    "9- Lost": 0,
+};
+
 export function DealsTable({ deals }: DealsTableProps) {
     const [localDeals, setLocalDeals] = useState(deals);
 
@@ -40,7 +53,15 @@ export function DealsTable({ deals }: DealsTableProps) {
     }, [deals]);
 
     const handleStageChange = async (dealId: string, newStage: string) => {
-        setLocalDeals(prev => prev.map(d => d.deal_id === dealId ? { ...d, stage: newStage } : d));
+        // Derive new probability from the stage map
+        const newProbability = STAGE_PROBABILITIES[newStage] ?? 10;
+
+        // Optimistic UI update: update both stage and probability locally
+        setLocalDeals(prev =>
+            prev.map(d =>
+                d.deal_id === dealId ? { ...d, stage: newStage, probability: newProbability } : d
+            )
+        );
 
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -52,7 +73,8 @@ export function DealsTable({ deals }: DealsTableProps) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`
                 },
-                body: JSON.stringify({ stage: newStage })
+                // Send both stage AND probability so weighted forecast recalculates on the server
+                body: JSON.stringify({ stage: newStage, probability: newProbability })
             });
         } catch (err) {
             console.error("Failed to update stage", err);
@@ -93,6 +115,7 @@ export function DealsTable({ deals }: DealsTableProps) {
                         <th className="px-3 py-2 bg-orange-500 text-white w-16 text-center border-r border-slate-200">LH Prio</th>
                         <th className="px-3 py-2 bg-lime-300 text-slate-800 w-48 border-r border-slate-200">Solid Deal</th>
                         <th className="px-3 py-2 bg-lime-300 text-slate-800 w-40 border-r border-slate-200">Offering</th>
+                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-28 border-r border-slate-200">Level</th>
                         <th className="px-3 py-2 bg-lime-300 text-slate-800 w-40 border-r border-slate-200">Who Pays</th>
                         <th className="px-3 py-2 bg-orange-500 text-white w-32 border-r border-slate-200">Sales Force</th>
                         <th className="px-3 py-2 bg-amber-100 text-slate-800 text-right w-32 border-r border-slate-200">Amount</th>
@@ -107,6 +130,23 @@ export function DealsTable({ deals }: DealsTableProps) {
                             <td className="px-3 py-2 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50">{deal.priority || '-'}</td>
                             <td className="px-3 py-2 font-medium text-slate-900 border-r border-slate-100">{deal.name}</td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
+                            {/* Level badge */}
+                            <td className="px-3 py-2 border-r border-slate-100">
+                                {deal.level ? (
+                                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide
+                                        ${deal.level === 'Enterprise'
+                                            ? 'bg-purple-100 text-purple-700'
+                                            : deal.level === 'Premium'
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-slate-100 text-slate-600' /* Standard */
+                                        }`}
+                                    >
+                                        {deal.level}
+                                    </span>
+                                ) : (
+                                    <span className="text-slate-400 text-xs">-</span>
+                                )}
+                            </td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100">{deal.company_name || '-'}</td>
                             <td className="px-3 py-2 text-slate-600 border-r border-slate-100 capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</td>
                             <td className="text-right font-medium text-slate-900 border-r border-slate-100 px-3 py-2">

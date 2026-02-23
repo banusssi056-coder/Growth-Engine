@@ -130,6 +130,133 @@ app.post('/api/templates/preview', authorize(['admin', 'manager', 'rep']), async
 app.use('/api/track', trackingRoutes(pool)); // Mount Pixel Tracking at /api/track/pixel/:id
 app.use('/api/users', userRoutes);           // Mount User Management
 
+// ── FR-A.2: Global Search API ──────────────────────────────────────────────
+// GET /api/search?q=<term>&limit=<n>
+// Uses GIN trigram indexes (pg_trgm) + B-Tree indexes for fast ILIKE matching.
+// Returns results from contacts, companies, deals, and users (team members).
+app.get('/api/search', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
+    const q = (req.query.q || '').trim();
+    if (!q || q.length < 2) {
+        return res.json({ results: [] });
+    }
+
+    const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+    const term = `%${q}%`; // ILIKE pattern – hits GIN trigram indexes
+
+    try {
+        // ── 1. Contacts: match name, email, phone ──────────────────
+        const contactsQuery = `
+            SELECT
+                cont_id   AS id,
+                'contact' AS type,
+                (first_name || ' ' || last_name) AS title,
+                email     AS subtitle,
+                phone     AS meta,
+                NULL      AS url_id
+            FROM contacts
+            WHERE
+                first_name ILIKE $1 OR
+                last_name  ILIKE $1 OR
+                (first_name || ' ' || last_name) ILIKE $1 OR
+                email ILIKE $1 OR
+                phone ILIKE $1
+            ORDER BY last_name, first_name
+            LIMIT $2
+        `;
+
+        // ── 2. Companies: match name, domain ──────────────────────
+        const companiesQuery = `
+            SELECT
+                comp_id   AS id,
+                'company' AS type,
+                name      AS title,
+                domain    AS subtitle,
+                industry  AS meta,
+                NULL      AS url_id
+            FROM companies
+            WHERE
+                name   ILIKE $1 OR
+                domain ILIKE $1
+            ORDER BY name
+            LIMIT $2
+        `;
+
+        // ── 3. Deals: match name, offering, remark ────────────────
+        // RBAC: reps/interns only see their own deals
+        let dealsFilter = '';
+        const dealsParams = [term, limit];
+        if (req.user.role === 'rep' || req.user.role === 'intern') {
+            dealsFilter = 'AND d.owner_id = $3';
+            dealsParams.push(req.user.id);
+        } else if (req.user.role === 'manager') {
+            dealsFilter = 'AND (d.owner_id = $3 OR d.owner_id IN (SELECT user_id FROM users WHERE manager_id = $3))';
+            dealsParams.push(req.user.id);
+        }
+
+        const dealsQuery = `
+            SELECT
+                d.deal_id   AS id,
+                'deal'      AS type,
+                d.name      AS title,
+                d.stage     AS subtitle,
+                c.name      AS meta,
+                d.deal_id   AS url_id
+            FROM deals d
+            LEFT JOIN companies c ON d.comp_id = c.comp_id
+            WHERE (
+                d.name     ILIKE $1 OR
+                d.offering ILIKE $1 OR
+                d.remark   ILIKE $1
+            ) ${dealsFilter}
+            ORDER BY d.updated_at DESC
+            LIMIT $2
+        `;
+
+        // ── 4. Users (team members): match name, email, phone ─────
+        // Only admin & manager can see full team directory
+        let usersRows = [];
+        if (req.user.role === 'admin' || req.user.role === 'manager') {
+            const usersResult = await pool.query(`
+                SELECT
+                    user_id   AS id,
+                    'user'    AS type,
+                    COALESCE(full_name, email) AS title,
+                    email     AS subtitle,
+                    role      AS meta,
+                    NULL      AS url_id
+                FROM users
+                WHERE
+                    full_name ILIKE $1 OR
+                    email     ILIKE $1 OR
+                    phone     ILIKE $1
+                ORDER BY full_name
+                LIMIT $2
+            `, [term, limit]);
+            usersRows = usersResult.rows;
+        }
+
+        // Run contacts, companies, deals queries in parallel
+        const [contactsResult, companiesResult, dealsResult] = await Promise.all([
+            pool.query(contactsQuery, [term, limit]),
+            pool.query(companiesQuery, [term, limit]),
+            pool.query(dealsQuery, dealsParams),
+        ]);
+
+        // Merge & return unified result list
+        const results = [
+            ...contactsResult.rows,
+            ...companiesResult.rows,
+            ...dealsResult.rows,
+            ...usersRows,
+        ];
+
+        res.json({ results, query: q });
+    } catch (err) {
+        console.error('[Search] Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Admin Export API
 app.get('/api/export/deals', authorize(['admin']), async (req, res) => {
     try {

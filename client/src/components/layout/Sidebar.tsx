@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { GlobalSearch } from './GlobalSearch';
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
@@ -79,7 +80,11 @@ export function Sidebar() {
             <div className="flex h-16 items-center border-b border-slate-700 px-6">
                 <span className="text-xl font-bold tracking-tight text-emerald-400">GrowthEngine</span>
             </div>
-            <div className="flex-1 py-6">
+            {/* Global Search */}
+            <div className="px-3 py-3 border-b border-slate-700/60">
+                <GlobalSearch />
+            </div>
+            <div className="flex-1 py-4">
                 <nav className="space-y-1 px-3">
                     {NAV_ITEMS.filter(item => {
                         if (item.label === 'Settings' && user?.role !== 'admin') return false;

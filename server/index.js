@@ -142,6 +142,7 @@ app.get('/api/search', authorize(['admin', 'manager', 'rep', 'intern']), async (
 
     const limit = Math.min(parseInt(req.query.limit) || 10, 50);
     const term = `%${q}%`; // ILIKE pattern – hits GIN trigram indexes
+    const t0 = process.hrtime.bigint(); // high-res timer for latency measurement
 
     try {
         // ── 1. Contacts: match name, email, phone ──────────────────
@@ -250,7 +251,13 @@ app.get('/api/search', authorize(['admin', 'manager', 'rep', 'intern']), async (
             ...usersRows,
         ];
 
-        res.json({ results, query: q });
+        // Calculate DB latency and expose via header (proves FR-A.2 < 150 ms requirement)
+        const elapsedMs = Math.round(Number(process.hrtime.bigint() - t0) / 1_000_000);
+        res.setHeader('X-Search-Time-Ms', elapsedMs);
+        res.setHeader('X-Search-Count', results.length);
+        res.setHeader('Access-Control-Expose-Headers', 'X-Search-Time-Ms, X-Search-Count');
+
+        res.json({ results, query: q, latency_ms: elapsedMs });
     } catch (err) {
         console.error('[Search] Error:', err);
         res.status(500).json({ error: err.message });

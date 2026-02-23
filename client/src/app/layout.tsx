@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from '@/components/layout/Sidebar';
+import { GlobalSearchProvider } from '@/components/layout/GlobalSearch';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,13 +19,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="flex h-screen w-screen overflow-hidden bg-slate-100">
-          {/* Sidebar - typically only for authenticated routes, but global for demo */}
-          <Sidebar />
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            {children}
+        <GlobalSearchProvider>
+          <div className="flex h-screen w-screen overflow-hidden bg-slate-100">
+            {/* Sidebar - typically only for authenticated routes, but global for demo */}
+            <Sidebar />
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+              {children}
+            </div>
           </div>
-        </div>
+        </GlobalSearchProvider>
       </body>
     </html>
   );

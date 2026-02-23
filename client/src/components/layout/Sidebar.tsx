@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
-
+import { SearchTriggerButton } from './GlobalSearch';
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
 export function Sidebar() {
     const pathname = usePathname();
     const [user, setUser] = useState<any>(null);
+    const [searchOpen, setSearchOpen] = useState(false);
     const router = useRouter();
 
 
@@ -80,8 +81,14 @@ export function Sidebar() {
             <div className="flex h-16 items-center border-b border-slate-700 px-6">
                 <span className="text-xl font-bold tracking-tight text-emerald-400">GrowthEngine</span>
             </div>
-            <div className="flex-1 py-6">
+            <div className="flex-1 py-4">
                 <nav className="space-y-1 px-3">
+                    {/* Search trigger — opens Ctrl+K command palette */}
+                    <SearchTriggerButton onClick={() => {
+                        // Dispatch a synthetic Ctrl+K to open the GlobalSearchProvider modal
+                        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
+                    }} />
+                    <div className="my-2 border-t border-slate-700/50" />
                     {NAV_ITEMS.filter(item => {
                         if (item.label === 'Settings' && user?.role !== 'admin') return false;
                         return true;

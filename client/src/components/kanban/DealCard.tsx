@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
+import { LeadScoreBadge } from '../deals/LeadScoreBadge';
 
 export interface Deal {
     deal_id: string;
@@ -16,6 +17,7 @@ export interface Deal {
     priority?: number;
     frequency?: string;
     remark?: string;
+    lead_score?: number;
 }
 
 interface DealCardProps {
@@ -27,8 +29,13 @@ interface DealCardProps {
 export function DealCard({ deal, onLogActivity, isOverlay }: DealCardProps) {
     return (
         <Card className={`group cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative ${isOverlay ? 'shadow-xl cursor-grabbing' : ''}`}>
-            <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="font-medium text-sm truncate">{deal.name}</div>
+            <CardHeader className="p-4 flex flex-row items-start justify-between space-y-0 pb-2">
+                <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate">{deal.name}</div>
+                    <div className="mt-1">
+                        <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="sm" />
+                    </div>
+                </div>
                 {!isOverlay && (
                     <div className="flex gap-1">
                         <button

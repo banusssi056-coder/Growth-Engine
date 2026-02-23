@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/currency';
+import { LeadScoreBadge } from './LeadScoreBadge';
 
 interface Deal {
     deal_id: string;
@@ -15,6 +16,7 @@ interface Deal {
     priority?: number;
     frequency?: string;
     remark?: string;
+    lead_score?: number;
 }
 
 interface DealsTableProps {
@@ -138,7 +140,10 @@ export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
                     {localDeals.map((deal) => (
                         <tr key={deal.deal_id} className="hover:bg-slate-50 transition-colors group align-top">
                             <td className="px-2 py-2.5 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50 text-xs">{deal.priority || '-'}</td>
-                            <td className="px-3 py-2.5 font-medium text-slate-900 border-r border-slate-100 text-sm">{deal.name}</td>
+                            <td className="px-3 py-2.5 border-r border-slate-100">
+                                <div className="font-medium text-slate-900 text-sm mb-1">{deal.name}</div>
+                                <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="sm" />
+                            </td>
                             <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
                             {/* Level badge */}
                             <td className="px-3 py-2.5 border-r border-slate-100">

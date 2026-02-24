@@ -158,7 +158,7 @@ app.get('/api/deals/:id/score', authorize(['admin', 'manager', 'rep', 'intern'])
 });
 
 // -- Routes --
-app.use('/api/track', trackingRoutes(pool)); // Mount Pixel Tracking at /api/track/pixel/:id
+app.use('/api/track', trackingRoutes); // Mount Pixel Tracking at /api/track/pixel/:id
 app.use('/api/users', userRoutes);           // Mount User Management
 
 // ── FR-A.2: Global Search API ──────────────────────────────────────────────

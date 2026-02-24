@@ -98,6 +98,16 @@ async function assignLeads(pool) {
 
             await pool.query('COMMIT');
             console.log(`[The Brain] Assigned Deal ${lead.deal_id} → ${assignedRep.email}`);
+
+            // 4. Notify Rep
+            await createNotification(pool, {
+                userId: assignedRep.user_id,
+                type: 'SYSTEM',
+                title: `🆕 New Lead Assigned`,
+                body: `You have been assigned a new lead: ${lead.deal_id}. Please follow up.`,
+                dealId: lead.deal_id,
+            });
+
             repIndex = (repIndex + 1) % reps.length;
         }
     } catch (err) {
@@ -109,7 +119,8 @@ async function assignLeads(pool) {
 // ── FR-C.2: Stale Lead Trigger (runs every 12 h) ─────────────────────────────────
 //
 //  Threshold A  > 3 days  → Omni-channel Alert (Email + In-App) to owner
-//  Threshold B  > 10 days → Move to "Cold Pool" + unassign owner
+//  Threshold B  > 48h extra (> 5 days total) → Escalate to Manager
+//  Threshold C  > 10 days → Move to "Cold Pool" + unassign owner
 //
 async function checkStaleLeads(pool) {
     console.log('[The Brain] ── Stale Lead Check Starting ──');
@@ -177,33 +188,72 @@ async function checkStaleLeads(pool) {
                         <p>The deal <strong>${deal.deal_name}</strong> has had
                            <strong>no activity for ${daysSince} day(s)</strong>.</p>
                         <p>Please log a call, email, or note to keep this deal moving.</p>
-                        <table style="border-collapse:collapse;margin:16px 0">
-                            <tr>
-                                <td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px">Deal</td>
-                                <td style="padding:4px 0;font-weight:600">${deal.deal_name}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px">Value</td>
-                                <td style="padding:4px 0;font-weight:600">$${Number(deal.value || 0).toLocaleString()}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px">Last Activity</td>
-                                <td style="padding:4px 0">${new Date(deal.last_activity_date).toDateString()}</td>
-                            </tr>
-                        </table>
                         <p style="color:#6b7280;font-size:12px">
-                            If no activity is logged within 10 days, this deal will be moved to the Cold Pool.
+                            If no activity is logged within 48 hours, your manager will be notified.
                         </p>
                         <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
                         <p style="color:#9ca3af;font-size:11px">SSSI GrowthEngine — Automated Alert</p>
                     </div>
                 `,
             });
-
-            console.log(`[The Brain] Stale alert sent for Deal ${deal.deal_id} (${daysSince}d) → ${deal.owner_email}`);
         }
 
-        // ── Part B: 10-day Cold Pool ─────────────────────────────────────────────
+        // ── Part B: 48h Escalation (> 5 days total) ──────────────────────────────
+        const escalation = await pool.query(`
+            SELECT
+                d.deal_id, d.name AS deal_name, d.value,
+                d.last_activity_date,
+                u.user_id   AS owner_id,
+                u.email     AS owner_email,
+                u.full_name AS owner_name,
+                m.email     AS manager_email
+            FROM deals d
+            JOIN users u ON d.owner_id = u.user_id
+            LEFT JOIN users m ON u.manager_id = m.user_id
+            WHERE
+                d.is_stale = TRUE
+                AND d.last_activity_date < NOW() - INTERVAL '5 days'
+                AND d.escalation_sent_at IS NULL
+                AND d.stage NOT IN ('Closed', 'Lost', 'Paid')
+                AND COALESCE(d.cold_pool, FALSE) = FALSE
+        `);
+
+        console.log(`[The Brain] Escalation (>5d) deals found: ${escalation.rows.length}`);
+
+        for (const deal of escalation.rows) {
+            if (!deal.manager_email) continue;
+
+            // 1. Update escalation flag
+            await pool.query(
+                `UPDATE deals SET escalation_sent_at = NOW() WHERE deal_id = $1`,
+                [deal.deal_id]
+            );
+
+            // 2. Activity log
+            await pool.query(
+                `INSERT INTO activities (deal_id, type, content)
+                 VALUES ($1, 'ALERT', $2)`,
+                [deal.deal_id, `[ESCALATION] Deal inactivity escalated to manager: ${deal.manager_email}`]
+            );
+
+            // 3. Email Manager
+            await sendEmail({
+                to: deal.manager_email,
+                subject: `🚨 [ESCALATION] Neglected Deal: ${deal.deal_name}`,
+                html: `
+                    <div style="font-family:sans-serif;max-width:560px;margin:auto">
+                        <h2 style="color:#dc2626">🚨 Deal Escalation</h2>
+                        <p>The deal <strong>${deal.deal_name}</strong> owned by <strong>${deal.owner_name || deal.owner_email}</strong>
+                           has been neglected for over 5 days.</p>
+                        <p>Please review the pipeline and follow up with the representative.</p>
+                        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
+                        <p style="color:#9ca3af;font-size:11px">SSSI GrowthEngine — Manager Escalation</p>
+                    </div>
+                `,
+            });
+        }
+
+        // ── Part C: 10-day Cold Pool ─────────────────────────────────────────────
         const coldPool = await pool.query(`
             SELECT
                 d.deal_id, d.name AS deal_name, d.value,
@@ -266,10 +316,10 @@ async function checkStaleLeads(pool) {
                             <h2 style="color:#3b82f6">🧊 Deal Moved to Cold Pool</h2>
                             <p>Hi ${deal.owner_name || deal.owner_email},</p>
                             <p>The deal <strong>${deal.deal_name}</strong> has been
-                               moved to the <strong>Cold Pool</strong> after
-                               <strong>${daysSince} days</strong> of inactivity.</p>
+                                moved to the <strong>Cold Pool</strong> after
+                                <strong>${daysSince} days</strong> of inactivity.</p>
                             <p>The deal has been <strong>unassigned</strong> from your pipeline.
-                               An admin can re-activate and reassign it at any time.</p>
+                                An admin can re-activate and reassign it at any time.</p>
                             <p style="color:#6b7280;font-size:12px">
                                 Last Activity: ${new Date(deal.last_activity_date).toDateString()}
                             </p>

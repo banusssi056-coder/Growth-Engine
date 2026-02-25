@@ -161,7 +161,7 @@ router.get('/click/:send_id', async (req, res) => {
 });
 
 // ── POST /api/track/send (auth required) ────────────────────────────────
-router.post('/send', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+router.post('/send', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     const { deal_id, cont_id, to_email, subject, body_html, body_raw } = req.body;
     const db = req.db;
     try {
@@ -186,7 +186,7 @@ router.post('/send', authorize(['admin', 'manager', 'rep']), async (req, res) =>
 });
 
 // ── GET /api/track/sends/:deal_id (auth required) ───────────────────────
-router.get('/sends/:deal_id', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+router.get('/sends/:deal_id', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     const db = req.db;
     try {
         const result = await db.query(

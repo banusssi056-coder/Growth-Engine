@@ -208,44 +208,73 @@ export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) 
                                 </select>
                             </td>
 
-                            {/* ── Remark — auto-growing textarea, shows full text ── */}
+                            {/* ── Remark — Always visible full text ── */}
                             <td className="px-2 py-2 bg-white">
-                                <textarea
+                                <RemarkTextarea
                                     value={deal.remark || ''}
-                                    rows={1}
                                     readOnly={isReadOnly}
-                                    onChange={(e) => {
-                                        if (isReadOnly) return;
-                                        e.target.style.height = 'auto';
-                                        e.target.style.height = e.target.scrollHeight + 'px';
-                                        handleRemarkChange(deal.deal_id, e.target.value);
-                                    }}
-                                    onFocus={(e) => {
-                                        if (isReadOnly) return;
-                                        e.target.style.height = 'auto';
-                                        e.target.style.height = e.target.scrollHeight + 'px';
-                                    }}
-                                    onBlur={(e) => {
-                                        if (isReadOnly) return;
-                                        e.target.style.height = '';
-                                        handleRemarkBlur(deal.deal_id, e.target.value);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            (e.target as HTMLTextAreaElement).blur();
-                                        }
-                                    }}
-                                    style={{ minWidth: '200px' }}
-                                    className={`w-full resize-none overflow-hidden border-none bg-transparent text-xs text-slate-600 focus:ring-0 placeholder:text-slate-300 p-0 leading-relaxed ${isReadOnly ? 'cursor-default' : ''}`}
-                                    placeholder={isReadOnly ? '' : "Add remark…"}
+                                    onChange={(val) => handleRemarkChange(deal.deal_id, val)}
+                                    onBlur={(val) => handleRemarkBlur(deal.deal_id, val)}
                                 />
                             </td>
                         </tr>
                     ))}
-
                 </tbody>
             </table>
         </div>
+    );
+}
+
+/**
+ * Helper component to handle auto-resizing textarea for remarks
+ */
+function RemarkTextarea({
+    value,
+    readOnly,
+    onChange,
+    onBlur
+}: {
+    value: string;
+    readOnly: boolean;
+    onChange: (val: string) => void;
+    onBlur: (val: string) => void;
+}) {
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    // Auto-resize on mount and value change
+    const resize = () => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    };
+
+    useEffect(() => {
+        resize();
+    }, [value]);
+
+    return (
+        <textarea
+            ref={textareaRef}
+            value={value}
+            readOnly={readOnly}
+            onChange={(e) => {
+                if (readOnly) return;
+                onChange(e.target.value);
+            }}
+            onBlur={(e) => {
+                if (readOnly) return;
+                onBlur(e.target.value);
+            }}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    (e.target as HTMLTextAreaElement).blur();
+                }
+            }}
+            style={{ minWidth: '220px', minHeight: '32px' }}
+            className={`w-full resize-none overflow-hidden border-none bg-transparent text-xs text-slate-600 focus:ring-0 placeholder:text-slate-300 p-0 leading-relaxed ${readOnly ? 'cursor-default' : ''}`}
+            placeholder={readOnly ? '' : "Add remark…"}
+        />
     );
 }

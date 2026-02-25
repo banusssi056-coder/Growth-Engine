@@ -125,7 +125,7 @@ export default function Deals() {
                             className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
                         >
                             <Plus size={16} />
-                            New Deal
+                            {userRole === 'intern' ? 'New Lead' : 'New Deal'}
                         </button>
                     </div>
                 </div>
@@ -151,6 +151,7 @@ export default function Deals() {
 
                 <CreateDealModal
                     isOpen={isCreateModalOpen}
+                    userRole={userRole}
                     onClose={() => setIsCreateModalOpen(false)}
                     onSuccess={handleNewDeal}
                 />

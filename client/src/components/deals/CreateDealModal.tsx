@@ -24,11 +24,13 @@ interface Company {
 
 interface CreateDealModalProps {
     isOpen: boolean;
+    userRole?: string;
     onClose: () => void;
     onSuccess: (newDeal: any) => void;
 }
 
-export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalProps) {
+export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: CreateDealModalProps) {
+    const isIntern = userRole === 'intern';
     const [name, setName] = useState('');
     const [value, setValue] = useState('');
     const [stage, setStage] = useState('1- New Lead');
@@ -128,7 +130,9 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 z-10">
                     <X size={20} />
                 </button>
-                <h2 className="mb-4 text-xl font-bold text-slate-900">Create New Deal</h2>
+                <h2 className="mb-4 text-xl font-bold text-slate-900">
+                    {isIntern ? 'Create New Lead' : 'Create New Deal'}
+                </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -273,13 +277,14 @@ export function CreateDealModal({ isOpen, onClose, onSuccess }: CreateDealModalP
                             <label className="block text-sm font-medium text-slate-700">Stage</label>
                             <select
                                 value={stage}
+                                disabled={isIntern}
                                 onChange={e => {
                                     const newStage = e.target.value;
                                     setStage(newStage);
                                     // Auto-update probability when stage changes
                                     setProbability(String(STAGE_PROBABILITIES[newStage] ?? 10));
                                 }}
-                                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                className={`mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 ${isIntern ? 'bg-slate-50 cursor-not-allowed' : ''}`}
                             >
                                 <option>1- New Lead</option>
                                 <option>2- Discussing, RFQing</option>

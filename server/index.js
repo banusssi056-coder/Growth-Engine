@@ -117,7 +117,7 @@ app.use(authenticate); // Simulate extracting user
 app.use(logAudit(pool)); // Attach audit helper
 
 // FR-D.3: Template Preview API (live preview — no pixel injection)
-app.post('/api/templates/preview', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+app.post('/api/templates/preview', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     const { template, deal_id, cont_id } = req.body;
     try {
         const rendered = await previewTemplate(pool, template, { deal_id, cont_id });
@@ -128,12 +128,12 @@ app.post('/api/templates/preview', authorize(['admin', 'manager', 'rep']), async
 });
 
 // FR-D.3: Return list of available Liquid variables for the composer UI
-app.get('/api/templates/variables', authorize(['admin', 'manager', 'rep']), (_req, res) => {
+app.get('/api/templates/variables', authorize(['admin', 'manager', 'rep', 'intern']), (_req, res) => {
     res.json(getAvailableVariables());
 });
 
 // FR-D.2: On-demand lead score recalculation for a single deal
-app.post('/api/deals/:id/score', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+app.post('/api/deals/:id/score', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     try {
         const result = await recalcSingleScore(pool, req.params.id);
         res.json(result);
@@ -468,7 +468,7 @@ app.get('/api/me', authenticate, async (req, res) => {
 });
 
 // FR-A.1: Companies API
-app.post('/api/companies', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+app.post('/api/companies', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     const { name, domain, industry, revenue } = req.body;
     try {
         console.log('[CreateCompany] Starting...');

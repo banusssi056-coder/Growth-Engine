@@ -12,16 +12,35 @@ export default function Contacts() {
     const [companies, setCompanies] = useState<any[]>([]);
     const [contacts, setContacts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [userRole, setUserRole] = useState<string>('rep');
     const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
     const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
     useEffect(() => {
+        fetchUser();
         if (activeTab === 'companies') {
             fetchCompanies();
         } else {
             fetchContacts();
         }
     }, [activeTab]);
+
+    const fetchUser = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+                    headers: { Authorization: `Bearer ${session.access_token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    setUserRole(user.role);
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching user role", err);
+        }
+    };
 
     const fetchCompanies = async () => {
         setLoading(true);
@@ -116,8 +135,8 @@ export default function Contacts() {
                     <button
                         onClick={() => setActiveTab('companies')}
                         className={`px-6 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'companies'
-                                ? 'border-emerald-600 text-emerald-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
+                            ? 'border-emerald-600 text-emerald-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
                             }`}
                     >
                         Companies
@@ -125,8 +144,8 @@ export default function Contacts() {
                     <button
                         onClick={() => setActiveTab('contacts')}
                         className={`px-6 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'contacts'
-                                ? 'border-emerald-600 text-emerald-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
+                            ? 'border-emerald-600 text-emerald-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
                             }`}
                     >
                         Contacts
@@ -183,13 +202,15 @@ export default function Contacts() {
                                                 {new Date(company.created_at).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => handleDeleteCompany(company.comp_id, company.name)}
-                                                    className="text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-2 rounded hover:bg-red-50"
-                                                    title="Delete Company"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                {userRole !== 'intern' && (
+                                                    <button
+                                                        onClick={() => handleDeleteCompany(company.comp_id, company.name)}
+                                                        className="text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-2 rounded hover:bg-red-50"
+                                                        title="Delete Company"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))
@@ -222,13 +243,15 @@ export default function Contacts() {
                                                 ) : '-'}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => handleDeleteContact(contact.cont_id, `${contact.first_name} ${contact.last_name}`)}
-                                                    className="text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-2 rounded hover:bg-red-50"
-                                                    title="Delete Contact"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                {userRole !== 'intern' && (
+                                                    <button
+                                                        onClick={() => handleDeleteContact(contact.cont_id, `${contact.first_name} ${contact.last_name}`)}
+                                                        className="text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-2 rounded hover:bg-red-50"
+                                                        title="Delete Contact"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))

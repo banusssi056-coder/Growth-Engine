@@ -1,37 +1,36 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// ── Lazy email transporter (uses env vars; falls back to console-only) ──────────
-function getMailer() {
-    if (!process.env.SMTP_HOST) return null;
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
-}
+/**
+ * ── FR-C.2: Email Engine (Resend API) ──────────────────────────────────────────
+ * 
+ * We now use Resend instead of SMTP for reliability and ease of use in 
+ * serverless/cloud environments like Cloudflare.
+ */
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // ── Send email helper ────────────────────────────────────────────────────────────
 async function sendEmail({ to, subject, html }) {
-    const mailer = getMailer();
-    if (!mailer) {
-        // No SMTP configured — log to console so nothing crashes
-        console.log(`[Email] (SMTP not configured) TO: ${to} | SUBJECT: ${subject}`);
+    if (!resend) {
+        // No API Key configured — log to console so nothing crashes
+        console.log(`[Email] (Resend API Key Missing) TO: ${to} | SUBJECT: ${subject}`);
+        console.log(`[Email Content Preview]: ${html.substring(0, 100)}...`);
         return;
     }
     try {
-        await mailer.sendMail({
-            from: process.env.SMTP_FROM || `"SSSI GrowthEngine" <noreply@sssi.com>`,
+        const { data, error } = await resend.emails.send({
+            from: process.env.EMAIL_FROM || 'SSSI GrowthEngine <onboarding@resend.dev>',
             to,
             subject,
             html,
         });
-        console.log(`[Email] Sent → ${to}: ${subject}`);
+
+        if (error) {
+            console.error('[Email] Resend error:', error.message);
+        } else {
+            console.log(`[Email] Sent via Resend → ${to}: ${subject} (id: ${data.id})`);
+        }
     } catch (err) {
-        console.error('[Email] Send error:', err.message);
+        console.error('[Email] Fatal error:', err.message);
     }
 }
 

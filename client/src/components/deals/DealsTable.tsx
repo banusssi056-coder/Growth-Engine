@@ -17,10 +17,12 @@ interface Deal {
     frequency?: string;
     remark?: string;
     lead_score?: number;
+    last_activity_date?: string;
 }
 
 interface DealsTableProps {
     deals: Deal[];
+    userRole?: string;
     onDealUpdated?: (dealId: string, patch: Partial<Deal>) => void;
 }
 
@@ -49,7 +51,8 @@ const STAGE_PROBABILITIES: Record<string, number> = {
     "9- Lost": 0,
 };
 
-export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
+export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) {
+    const isReadOnly = userRole === 'intern';
     const [localDeals, setLocalDeals] = useState(deals);
 
     useEffect(() => {
@@ -130,9 +133,8 @@ export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
                         <th className="px-3 py-2 bg-orange-500 text-white w-28 border-r border-slate-200">Sales Force</th>
                         <th className="px-3 py-2 bg-amber-100 text-slate-800 text-right w-28 border-r border-slate-200">Amount</th>
                         <th className="px-3 py-2 bg-lime-300 text-slate-800 w-24 border-r border-slate-200">Frequency</th>
-                        {/* Stage needs enough width to show the full stage name in the dropdown */}
+                        <th className="px-3 py-2 bg-orange-500 text-white w-32 border-r border-slate-200 text-center">Activity</th>
                         <th className="px-3 py-2 bg-orange-500 text-white border-r border-slate-200" style={{ minWidth: '220px' }}>Stage</th>
-                        {/* Remark fills all remaining space */}
                         <th className="px-3 py-2 bg-lime-300 text-slate-800" style={{ minWidth: '220px' }}>Remark</th>
                     </tr>
                 </thead>
@@ -169,14 +171,32 @@ export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
                             </td>
                             <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.frequency || '-'}</td>
 
+                            {/* ── Last Activity Date ── */}
+                            <td className="px-3 py-2.5 text-center border-r border-slate-100">
+                                {deal.last_activity_date ? (
+                                    <div className="flex flex-col items-center">
+                                        <div className="text-[11px] font-medium text-slate-700">
+                                            {new Date(deal.last_activity_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                        </div>
+                                        <div className="text-[9px] text-slate-400">
+                                            {new Date(deal.last_activity_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <span className="text-slate-400 text-xs">-</span>
+                                )}
+                            </td>
+
                             {/* ── Stage dropdown — wide enough to show full stage name ── */}
                             <td className="px-2 py-2 border-r border-slate-100">
                                 <select
                                     value={deal.stage}
+                                    disabled={isReadOnly}
                                     onChange={(e) => handleStageChange(deal.deal_id, e.target.value)}
                                     style={{ minWidth: '200px' }}
-                                    className={`block w-full rounded py-1.5 px-2 text-xs font-medium cursor-pointer
+                                    className={`block w-full rounded py-1.5 px-2 text-xs font-medium 
                                         border focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-400
+                                        ${isReadOnly ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}
                                         ${deal.stage.startsWith('1') ? 'bg-blue-50    text-blue-800    border-blue-200' :
                                             deal.stage.startsWith('8') ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                                                 deal.stage.startsWith('9') ? 'bg-red-50     text-red-800     border-red-200' :
@@ -193,16 +213,20 @@ export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
                                 <textarea
                                     value={deal.remark || ''}
                                     rows={1}
+                                    readOnly={isReadOnly}
                                     onChange={(e) => {
+                                        if (isReadOnly) return;
                                         e.target.style.height = 'auto';
                                         e.target.style.height = e.target.scrollHeight + 'px';
                                         handleRemarkChange(deal.deal_id, e.target.value);
                                     }}
                                     onFocus={(e) => {
+                                        if (isReadOnly) return;
                                         e.target.style.height = 'auto';
                                         e.target.style.height = e.target.scrollHeight + 'px';
                                     }}
                                     onBlur={(e) => {
+                                        if (isReadOnly) return;
                                         e.target.style.height = '';
                                         handleRemarkBlur(deal.deal_id, e.target.value);
                                     }}
@@ -213,8 +237,8 @@ export function DealsTable({ deals, onDealUpdated }: DealsTableProps) {
                                         }
                                     }}
                                     style={{ minWidth: '200px' }}
-                                    className="w-full resize-none overflow-hidden border-none bg-transparent text-xs text-slate-600 focus:ring-0 placeholder:text-slate-300 p-0 leading-relaxed"
-                                    placeholder="Add remark…"
+                                    className={`w-full resize-none overflow-hidden border-none bg-transparent text-xs text-slate-600 focus:ring-0 placeholder:text-slate-300 p-0 leading-relaxed ${isReadOnly ? 'cursor-default' : ''}`}
+                                    placeholder={isReadOnly ? '' : "Add remark…"}
                                 />
                             </td>
                         </tr>

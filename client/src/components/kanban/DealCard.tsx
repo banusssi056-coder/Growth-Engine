@@ -18,6 +18,7 @@ export interface Deal {
     frequency?: string;
     remark?: string;
     lead_score?: number;
+    last_activity_date?: string;
 }
 
 interface DealCardProps {
@@ -78,12 +79,19 @@ export function DealCard({ deal, onLogActivity, isOverlay }: DealCardProps) {
                 )}
 
                 <div className="flex justify-between items-end mt-2">
-                    <div className="font-bold text-lg">
-                        {formatCurrency(deal.value)}
-                        {deal.frequency && (
-                            <span className="text-[10px] font-normal text-slate-400 ml-1">
-                                / {deal.frequency}
-                            </span>
+                    <div className="flex flex-col">
+                        <div className="font-bold text-lg leading-none mb-1">
+                            {formatCurrency(deal.value)}
+                            {deal.frequency && (
+                                <span className="text-[10px] font-normal text-slate-400 ml-1">
+                                    / {deal.frequency}
+                                </span>
+                            )}
+                        </div>
+                        {deal.last_activity_date && (
+                            <div className="text-[9px] text-slate-400">
+                                Activity: {new Date(deal.last_activity_date).toLocaleDateString()}
+                            </div>
                         )}
                     </div>
                     {!isOverlay && (

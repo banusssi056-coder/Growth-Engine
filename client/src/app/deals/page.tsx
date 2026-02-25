@@ -119,15 +119,14 @@ export default function Deals() {
                             </button>
                         </div>
 
-                        {userRole !== 'intern' && (
-                            <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
-                            >
-                                <Plus size={16} />
-                                New Deal
-                            </button>
-                        )}
+                        {/* Remove intern restriction to allow lead creation as per SRS */}
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                        >
+                            <Plus size={16} />
+                            New Deal
+                        </button>
                     </div>
                 </div>
 
@@ -143,6 +142,7 @@ export default function Deals() {
                         <div className="h-full overflow-y-auto pr-2">
                             <DealsTable
                                 deals={deals}
+                                userRole={userRole}
                                 onDealUpdated={handleDealUpdated}
                             />
                         </div>

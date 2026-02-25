@@ -217,7 +217,7 @@ app.get('/api/search', authorize(['admin', 'manager', 'rep', 'intern']), async (
         // RBAC: reps/interns only see their own deals
         let dealsFilter = '';
         const dealsParams = [term, limit];
-        if (req.user.role === 'rep' || req.user.role === 'intern') {
+        if (req.user.role === 'rep') {
             dealsFilter = 'AND d.owner_id = $3';
             dealsParams.push(req.user.id);
         } else if (req.user.role === 'manager') {
@@ -555,7 +555,7 @@ app.get('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (r
         const params = [];
 
         // VALIDATION: RBAC Visibility
-        if (req.user.role === 'rep' || req.user.role === 'intern') {
+        if (req.user.role === 'rep') {
             query += ` WHERE d.owner_id = $1`;
             params.push(req.user.id);
         } else if (req.user.role === 'manager') {

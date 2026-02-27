@@ -6,7 +6,7 @@ const { authorize } = require('../middleware/auth');
 router.get('/', authorize(['admin', 'manager']), async (req, res) => {
     try {
         const result = await req.db.query(
-            'SELECT user_id, email, role, is_active, last_assigned_at, manager_id, created_at FROM users ORDER BY created_at DESC'
+            'SELECT user_id, email, role, is_active, last_assigned_at, manager_id, assignment_weight, created_at FROM users ORDER BY created_at DESC'
         );
         res.json(result.rows);
     } catch (err) {
@@ -18,7 +18,7 @@ router.get('/', authorize(['admin', 'manager']), async (req, res) => {
 // PATCH /api/users/:id - Update user role/status/manager (Admin only)
 router.patch('/:id', authorize(['admin']), async (req, res) => {
     const { id } = req.params;
-    const { role, is_active, manager_id } = req.body;
+    const { role, is_active, manager_id, assignment_weight } = req.body;
 
     try {
         const fields = [];
@@ -36,6 +36,10 @@ router.patch('/:id', authorize(['admin']), async (req, res) => {
         if (manager_id !== undefined) {
             fields.push(`manager_id = $${idx++}`);
             values.push(manager_id);
+        }
+        if (assignment_weight !== undefined) {
+            fields.push(`assignment_weight = $${idx++}`);
+            values.push(assignment_weight);
         }
 
         if (fields.length === 0) {

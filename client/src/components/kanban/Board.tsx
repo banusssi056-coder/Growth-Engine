@@ -17,6 +17,7 @@ interface Deal {
     deal_id: string;
     name: string;
     company_name: string;
+    owner_id?: string;
     value: number;
     stage: string;
     probability?: number;
@@ -38,11 +39,12 @@ interface StageConfig {
 interface BoardProps {
     initialDeals: Deal[];
     userRole: string;
+    userId?: string | null;
     onDealUpdated?: (dealId: string, patch: Partial<Deal>) => void;
 }
 
 // ── Board ─────────────────────────────────────────────────────────────────────
-export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
+export function Board({ initialDeals, userRole, userId, onDealUpdated }: BoardProps) {
     // ── Stage config (from DB) ────────────────────────────────────────────────
     const [stageConfigs, setStageConfigs] = useState<StageConfig[]>([]);
     const [stagesLoading, setStagesLoading] = useState(true);
@@ -252,6 +254,8 @@ export function Board({ initialDeals, userRole, onDealUpdated }: BoardProps) {
                             title={stage.name}
                             color={stage.color}
                             deals={items[stage.name] || []}
+                            userRole={userRole}
+                            userId={userId}
                             onLogActivity={(dealId) => {
                                 const deal = (items[stage.name] || []).find(d => d.deal_id === dealId);
                                 if (deal) handleOpenActivityLog(deal.deal_id, deal.name);

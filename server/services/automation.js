@@ -63,7 +63,7 @@ async function assignLeads(pool) {
         console.log(`[The Brain] Found ${leads.length} unassigned leads.`);
 
         const repsRes = await pool.query(`
-            SELECT user_id, email
+            SELECT user_id, email, assignment_weight, last_assigned_at
             FROM users
             WHERE role IN ('rep', 'manager') AND is_active = TRUE
             ORDER BY last_assigned_at ASC NULLS FIRST
@@ -74,11 +74,27 @@ async function assignLeads(pool) {
             return;
         }
 
-        const reps = repsRes.rows;
-        let repIndex = 0;
+        const rawReps = repsRes.rows;
+        // Expand reps into a weighted queue (FR-C.1)
+        let repQueue = [];
+        rawReps.forEach(r => {
+            const weight = parseInt(r.assignment_weight) || 1;
+            for (let i = 0; i < weight; i++) {
+                repQueue.push(r);
+            }
+        });
+
+        // Sort by last_assigned_at to ensure those who waited longest (even with high weight) are first
+        repQueue.sort((a, b) => {
+            if (!a.last_assigned_at) return -1;
+            if (!b.last_assigned_at) return 1;
+            return new Date(a.last_assigned_at) - new Date(b.last_assigned_at);
+        });
+
+        let queueIndex = 0;
 
         for (const lead of leads) {
-            const assignedRep = reps[repIndex];
+            const assignedRep = repQueue[queueIndex % repQueue.length];
             await pool.query('BEGIN');
 
             await pool.query(
@@ -91,8 +107,8 @@ async function assignLeads(pool) {
             );
             await pool.query(
                 `INSERT INTO activities (deal_id, type, content)
-                 VALUES ($1, 'NOTE', $2)`,
-                [lead.deal_id, `System assigned lead to ${assignedRep.email}`]
+                 VALUES ($1, 'SYSTEM', $2)`,
+                [lead.deal_id, `System assigned lead to ${assignedRep.email} (Round-Robin)`]
             );
 
             await pool.query('COMMIT');
@@ -107,7 +123,7 @@ async function assignLeads(pool) {
                 dealId: lead.deal_id,
             });
 
-            repIndex = (repIndex + 1) % reps.length;
+            queueIndex++;
         }
     } catch (err) {
         console.error('[The Brain] Assignment Error:', err);

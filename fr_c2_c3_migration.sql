@@ -76,4 +76,4 @@ CREATE TRIGGER trg_update_last_activity
 -- Update the CHECK constraint to also include STAGE_CHANGE & ALERT
 ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_type_check;
 ALTER TABLE activities ADD CONSTRAINT activities_type_check
-    CHECK (type IN ('CALL','EMAIL','NOTE','MEETING','SYSTEM','STAGE_CHANGE','ALERT'));
+    CHECK (type IN ('CALL','EMAIL','NOTE','MEETING','SYSTEM','STAGE_CHANGE','ALERT','EMAIL_SENT','EMAIL_OPENED','LINK_CLICKED'));

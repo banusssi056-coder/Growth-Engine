@@ -6,7 +6,7 @@ const dns = require('dns');
 // Force IPv4
 dns.setDefaultResultOrder('ipv4first');
 
-const { assignLeads, checkStaleLeads } = require('./services/automation');
+const { assignLeads, checkStaleLeads, checkFollowUps } = require('./services/automation');
 const { recalcAllScores } = require('./services/scoring'); // FR-D.2
 
 console.log('[The Brain] Starting Automation Worker...');

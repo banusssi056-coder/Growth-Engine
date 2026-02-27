@@ -13,6 +13,7 @@ export default function Deals() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [userRole, setUserRole] = useState('rep');
+    const [userId, setUserId] = useState<string | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'board' | 'list'>('list');
 
@@ -43,6 +44,7 @@ export default function Deals() {
             if (meRes.ok) {
                 const me = await meRes.json();
                 setUserRole(me.role);
+                setUserId(me.user_id || me.id);
             }
 
             if (dealsRes.ok) {
@@ -136,6 +138,7 @@ export default function Deals() {
                         <Board
                             initialDeals={deals}
                             userRole={userRole}
+                            userId={userId}
                             onDealUpdated={handleDealUpdated}
                         />
                     ) : (
@@ -143,6 +146,7 @@ export default function Deals() {
                             <DealsTable
                                 deals={deals}
                                 userRole={userRole}
+                                userId={userId}
                                 onDealUpdated={handleDealUpdated}
                             />
                         </div>

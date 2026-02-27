@@ -14,6 +14,7 @@ interface User {
     role: string;
     manager_id?: string;
     is_active: boolean;
+    assignment_weight?: number;
     created_at: string;
 }
 
@@ -128,6 +129,28 @@ export default function Settings() {
         }
     };
 
+    const handleWeightChange = async (userId: string, weight: number) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ assignment_weight: weight })
+            });
+
+            if (res.ok) {
+                setUsers(users.map(u => u.user_id === userId ? { ...u, assignment_weight: weight } : u));
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleExport = async () => {
         setExporting(true);
         const { data: { session } } = await supabase.auth.getSession();
@@ -190,6 +213,7 @@ export default function Settings() {
                                     <th className="px-6 py-3">User</th>
                                     <th className="px-6 py-3">Role</th>
                                     <th className="px-6 py-3">Reports To</th>
+                                    <th className="px-6 py-3">Weight (RR)</th>
                                     <th className="px-6 py-3">Status</th>
                                     <th className="px-6 py-3">Joined</th>
                                     <th className="px-6 py-3 text-right">Actions</th>
@@ -228,6 +252,16 @@ export default function Settings() {
                                                     <option key={m.user_id} value={m.user_id}>{m.email}</option>
                                                 ))}
                                             </select>
+                                        </td>
+                                        <td className="px-6 py-3">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="10"
+                                                value={u.assignment_weight || 1}
+                                                onChange={(e) => handleWeightChange(u.user_id, parseInt(e.target.value) || 1)}
+                                                className="w-16 border border-slate-200 rounded text-sm px-2 py-1 text-center font-mono"
+                                            />
                                         </td>
                                         <td className="px-6 py-3">
                                             <span className={cn(

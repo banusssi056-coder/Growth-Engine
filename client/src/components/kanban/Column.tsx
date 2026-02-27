@@ -10,10 +10,12 @@ interface ColumnProps {
     title: string;
     deals: any[];
     color?: string;   // hex colour from stages table
+    userRole?: string;
+    userId?: string | null;
     onLogActivity: (dealId: string) => void;
 }
 
-export function Column({ id, title, deals, color, onLogActivity }: ColumnProps) {
+export function Column({ id, title, deals, color, userRole, userId, onLogActivity }: ColumnProps) {
     const { setNodeRef } = useDroppable({ id });
 
     return (
@@ -38,7 +40,12 @@ export function Column({ id, title, deals, color, onLogActivity }: ColumnProps) 
                 >
                     {deals.map((deal) => (
                         <div key={deal.deal_id}>
-                            <SortableDealCard deal={deal} onLogActivity={onLogActivity} />
+                            <SortableDealCard
+                                deal={deal}
+                                onLogActivity={onLogActivity}
+                                userRole={userRole}
+                                userId={userId}
+                            />
                         </div>
                     ))}
                 </SortableContext>

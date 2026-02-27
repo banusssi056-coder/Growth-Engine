@@ -11,6 +11,7 @@ export interface Deal {
     deal_id: string;
     name: string;
     company_name: string;
+    owner_id?: string;
     value: number;
     level?: string;
     offering?: string;
@@ -21,15 +22,24 @@ export interface Deal {
     last_activity_date?: string;
 }
 
+interface SortableDealCardProps {
+    deal: Deal;
+    onLogActivity?: (dealId: string) => void;
+    userRole?: string;
+    userId?: string | null;
+}
+
 interface DealCardProps {
     deal: Deal;
     onLogActivity?: (dealId: string) => void;
     isOverlay?: boolean;
+    userCanEdit?: boolean;
 }
 
-export function DealCard({ deal, onLogActivity, isOverlay }: DealCardProps) {
+export function DealCard({ deal, onLogActivity, isOverlay, userCanEdit = true }: DealCardProps) {
+    const cursorClass = userCanEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-default';
     return (
-        <Card className={`group cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative ${isOverlay ? 'shadow-xl cursor-grabbing' : ''}`}>
+        <Card className={`group ${cursorClass} hover:shadow-md transition-shadow relative ${isOverlay ? 'shadow-xl cursor-grabbing' : ''}`}>
             <CardHeader className="p-4 flex flex-row items-start justify-between space-y-0 pb-2">
                 <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate">{deal.name}</div>
@@ -113,7 +123,9 @@ export function DealCard({ deal, onLogActivity, isOverlay }: DealCardProps) {
     );
 }
 
-export function SortableDealCard({ deal, onLogActivity }: DealCardProps) {
+export function SortableDealCard({ deal, onLogActivity, userRole, userId }: SortableDealCardProps) {
+    const userCanEdit = userRole === 'admin' || userRole === 'manager' || (userRole === 'rep' && deal.owner_id === userId);
+
     const {
         attributes,
         listeners,
@@ -121,7 +133,10 @@ export function SortableDealCard({ deal, onLogActivity }: DealCardProps) {
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: deal.deal_id });
+    } = useSortable({
+        id: deal.deal_id,
+        disabled: !userCanEdit
+    });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -130,8 +145,8 @@ export function SortableDealCard({ deal, onLogActivity }: DealCardProps) {
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-3">
-            <DealCard deal={deal} onLogActivity={onLogActivity} />
+        <div ref={setNodeRef} style={style} {...attributes} {...(userCanEdit ? listeners : {})} className="mb-3">
+            <DealCard deal={deal} onLogActivity={onLogActivity} userCanEdit={userCanEdit} />
         </div>
     );
 }

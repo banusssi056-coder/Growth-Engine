@@ -26,6 +26,7 @@ interface Deal {
 interface DealsTableProps {
     deals: Deal[];
     userRole?: string;
+    userId?: string | null;
     onDealUpdated?: (dealId: string, patch: Partial<Deal>) => void;
 }
 
@@ -54,8 +55,7 @@ const STAGE_PROBABILITIES: Record<string, number> = {
     "9- Lost": 0,
 };
 
-export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) {
-    const isReadOnly = userRole === 'intern';
+export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTableProps) {
     const canReassign = userRole === 'admin' || userRole === 'manager';
     const [localDeals, setLocalDeals] = useState(deals);
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
@@ -220,125 +220,128 @@ export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) 
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
-                    {localDeals.map((deal) => (
-                        <tr key={deal.deal_id} className="hover:bg-slate-50 transition-colors group align-top">
-                            <td className="px-2 py-2.5 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50 text-xs">{deal.priority || '-'}</td>
-                            <td className="px-3 py-2.5 border-r border-slate-100">
-                                <div className="font-medium text-slate-900 text-sm mb-1">{deal.name}</div>
-                                <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="sm" />
-                            </td>
-                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
-                            {/* Level badge */}
-                            <td className="px-3 py-2.5 border-r border-slate-100">
-                                {deal.level ? (
-                                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide
+                    {localDeals.map((deal) => {
+                        const rowReadOnly = userRole === 'intern' || (userRole === 'rep' && deal.owner_id !== userId);
+                        return (
+                            <tr key={deal.deal_id} className="hover:bg-slate-50 transition-colors group align-top">
+                                <td className="px-2 py-2.5 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50 text-xs">{deal.priority || '-'}</td>
+                                <td className="px-3 py-2.5 border-r border-slate-100">
+                                    <div className="font-medium text-slate-900 text-sm mb-1">{deal.name}</div>
+                                    <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="sm" />
+                                </td>
+                                <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
+                                {/* Level badge */}
+                                <td className="px-3 py-2.5 border-r border-slate-100">
+                                    {deal.level ? (
+                                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide
                                         ${deal.level === 'Enterprise'
-                                            ? 'bg-purple-100 text-purple-700'
-                                            : deal.level === 'Premium'
-                                                ? 'bg-amber-100 text-amber-700'
-                                                : 'bg-slate-100 text-slate-600'
-                                        }`}
-                                    >
-                                        {deal.level}
-                                    </span>
-                                ) : (
-                                    <span className="text-slate-400 text-xs">-</span>
-                                )}
-                            </td>
-                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.company_name || '-'}</td>
-                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs text-center">
-                                {canReassign ? (
-                                    <select
-                                        value={deal.owner_id || ''}
-                                        onChange={(e) => handleOwnerChange(deal.deal_id, e.target.value)}
-                                        className="bg-transparent border-none p-0 text-xs focus:ring-0 cursor-pointer hover:text-slate-900"
-                                    >
-                                        <option value="" disabled>Unassigned</option>
-                                        {/* If the current owner is inactive (not in teamMembers), show them as an option so the select has a label */}
-                                        {deal.owner_id && !teamMembers.find(m => m.user_id === deal.owner_id) && (
-                                            <option value={deal.owner_id}>
-                                                {deal.owner_email ? deal.owner_email.split('@')[0] : 'Inactive User'} (Inactive)
-                                            </option>
-                                        )}
-                                        {teamMembers.map(m => (
-                                            <option key={m.user_id} value={m.user_id}>
-                                                {m.full_name || m.email.split('@')[0]}
-                                            </option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <span className="capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</span>
-                                )}
-                            </td>
-                            <td className="text-right font-medium text-slate-900 border-r border-slate-100 px-3 py-2.5 text-sm">
-                                {formatCurrency(deal.value)}
-                            </td>
-                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.frequency || '-'}</td>
+                                                ? 'bg-purple-100 text-purple-700'
+                                                : deal.level === 'Premium'
+                                                    ? 'bg-amber-100 text-amber-700'
+                                                    : 'bg-slate-100 text-slate-600'
+                                            }`}
+                                        >
+                                            {deal.level}
+                                        </span>
+                                    ) : (
+                                        <span className="text-slate-400 text-xs">-</span>
+                                    )}
+                                </td>
+                                <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.company_name || '-'}</td>
+                                <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs text-center">
+                                    {canReassign ? (
+                                        <select
+                                            value={deal.owner_id || ''}
+                                            onChange={(e) => handleOwnerChange(deal.deal_id, e.target.value)}
+                                            className="bg-transparent border-none p-0 text-xs focus:ring-0 cursor-pointer hover:text-slate-900"
+                                        >
+                                            <option value="" disabled>Unassigned</option>
+                                            {/* If the current owner is inactive (not in teamMembers), show them as an option so the select has a label */}
+                                            {deal.owner_id && !teamMembers.find(m => m.user_id === deal.owner_id) && (
+                                                <option value={deal.owner_id}>
+                                                    {deal.owner_email ? deal.owner_email.split('@')[0] : 'Inactive User'} (Inactive)
+                                                </option>
+                                            )}
+                                            {teamMembers.map(m => (
+                                                <option key={m.user_id} value={m.user_id}>
+                                                    {m.full_name || m.email.split('@')[0]}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <span className="capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</span>
+                                    )}
+                                </td>
+                                <td className="text-right font-medium text-slate-900 border-r border-slate-100 px-3 py-2.5 text-sm">
+                                    {formatCurrency(deal.value)}
+                                </td>
+                                <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.frequency || '-'}</td>
 
-                            {/* ── Last Activity Date ── */}
-                            <td className="px-3 py-2.5 text-center border-r border-slate-100">
-                                {deal.last_activity_date ? (
-                                    <div className="flex flex-col items-center">
-                                        <div className="text-[11px] font-medium text-slate-700">
-                                            {new Date(deal.last_activity_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                {/* ── Last Activity Date ── */}
+                                <td className="px-3 py-2.5 text-center border-r border-slate-100">
+                                    {deal.last_activity_date ? (
+                                        <div className="flex flex-col items-center">
+                                            <div className="text-[11px] font-medium text-slate-700">
+                                                {new Date(deal.last_activity_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                            </div>
+                                            <div className="text-[9px] text-slate-400">
+                                                {new Date(deal.last_activity_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                            </div>
                                         </div>
-                                        <div className="text-[9px] text-slate-400">
-                                            {new Date(deal.last_activity_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <span className="text-slate-400 text-xs">-</span>
-                                )}
-                            </td>
+                                    ) : (
+                                        <span className="text-slate-400 text-xs">-</span>
+                                    )}
+                                </td>
 
-                            {/* ── Next Follow-up ── */}
-                            <td className="px-2 py-2 border-r border-slate-100 text-center">
-                                <input
-                                    type="datetime-local"
-                                    value={deal.next_follow_up ? deal.next_follow_up.slice(0, 16) : ''}
-                                    onChange={(e) => handleFollowUpChange(deal.deal_id, e.target.value)}
-                                    className={`w-full bg-transparent border-none p-0 text-[10px] focus:ring-0 cursor-pointer 
+                                {/* ── Next Follow-up ── */}
+                                <td className="px-2 py-2 border-r border-slate-100 text-center">
+                                    <input
+                                        type="datetime-local"
+                                        value={deal.next_follow_up ? deal.next_follow_up.slice(0, 16) : ''}
+                                        onChange={(e) => handleFollowUpChange(deal.deal_id, e.target.value)}
+                                        className={`w-full bg-transparent border-none p-0 text-[10px] focus:ring-0 cursor-pointer 
                                         ${deal.follow_up_notified ? 'text-slate-400 line-through' : 'text-slate-700 font-medium'}
                                         hover:bg-slate-100 rounded transition-colors
                                     `}
-                                />
-                                {deal.next_follow_up && !deal.follow_up_notified && new Date(deal.next_follow_up) < new Date() && (
-                                    <div className="text-[9px] text-red-500 font-bold uppercase mt-0.5">Overdue</div>
-                                )}
-                            </td>
+                                    />
+                                    {deal.next_follow_up && !deal.follow_up_notified && new Date(deal.next_follow_up) < new Date() && (
+                                        <div className="text-[9px] text-red-500 font-bold uppercase mt-0.5">Overdue</div>
+                                    )}
+                                </td>
 
-                            {/* ── Stage dropdown — wide enough to show full stage name ── */}
-                            <td className="px-2 py-2 border-r border-slate-100">
-                                <select
-                                    value={deal.stage}
-                                    disabled={isReadOnly}
-                                    onChange={(e) => handleStageChange(deal.deal_id, e.target.value)}
-                                    style={{ minWidth: '200px' }}
-                                    className={`block w-full rounded py-1.5 px-2 text-xs font-medium 
+                                {/* ── Stage dropdown — wide enough to show full stage name ── */}
+                                <td className="px-2 py-2 border-r border-slate-100">
+                                    <select
+                                        value={deal.stage}
+                                        disabled={rowReadOnly}
+                                        onChange={(e) => handleStageChange(deal.deal_id, e.target.value)}
+                                        style={{ minWidth: '200px' }}
+                                        className={`block w-full rounded py-1.5 px-2 text-xs font-medium 
                                         border focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-400
-                                        ${isReadOnly ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}
+                                        ${rowReadOnly ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}
                                         ${deal.stage.startsWith('1') ? 'bg-blue-50    text-blue-800    border-blue-200' :
-                                            deal.stage.startsWith('8') ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                                                deal.stage.startsWith('9') ? 'bg-red-50     text-red-800     border-red-200' :
-                                                    deal.stage.startsWith('7') ? 'bg-slate-100  text-slate-700   border-slate-300' :
-                                                        'bg-amber-50   text-amber-800   border-amber-200'}
+                                                deal.stage.startsWith('8') ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                                                    deal.stage.startsWith('9') ? 'bg-red-50     text-red-800     border-red-200' :
+                                                        deal.stage.startsWith('7') ? 'bg-slate-100  text-slate-700   border-slate-300' :
+                                                            'bg-amber-50   text-amber-800   border-amber-200'}
                                     `}
-                                >
-                                    {STAGES.map(s => <option key={s} value={s} className="bg-white text-slate-800">{s}</option>)}
-                                </select>
-                            </td>
+                                    >
+                                        {STAGES.map(s => <option key={s} value={s} className="bg-white text-slate-800">{s}</option>)}
+                                    </select>
+                                </td>
 
-                            {/* ── Remark — Always visible full text ── */}
-                            <td className="px-2 py-2 bg-white">
-                                <RemarkTextarea
-                                    value={deal.remark || ''}
-                                    readOnly={isReadOnly}
-                                    onChange={(val) => handleRemarkChange(deal.deal_id, val)}
-                                    onBlur={(val) => handleRemarkBlur(deal.deal_id, val)}
-                                />
-                            </td>
-                        </tr>
-                    ))}
+                                {/* ── Remark — Always visible full text ── */}
+                                <td className="px-2 py-2 bg-white">
+                                    <RemarkTextarea
+                                        value={deal.remark || ''}
+                                        readOnly={rowReadOnly}
+                                        onChange={(val) => handleRemarkChange(deal.deal_id, val)}
+                                        onBlur={(val) => handleRemarkBlur(deal.deal_id, val)}
+                                    />
+                                </td>
+                            </tr>
+                        )
+                    })}
                 </tbody>
             </table>
         </div>

@@ -393,6 +393,24 @@ app.delete('/api/stages/:id', authorize(['admin']), async (req, res) => {
 app.get('/api/deals/:id/activities', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     const { id } = req.params;
     try {
+        // RBAC Check
+        if (req.user.role === 'rep') {
+            const ownershipRes = await pool.query('SELECT owner_id FROM deals WHERE deal_id = $1', [id]);
+            if (ownershipRes.rows.length === 0) return res.status(404).json({ error: 'Deal not found' });
+            if (ownershipRes.rows[0].owner_id !== req.user.id) {
+                return res.status(403).json({ error: 'You can only view activities for your own deals' });
+            }
+        } else if (req.user.role === 'manager') {
+            const ownershipRes = await pool.query(
+                `SELECT d.owner_id FROM deals d 
+                 WHERE d.deal_id = $1 AND (d.owner_id = $2 OR d.owner_id IN (SELECT user_id FROM users WHERE manager_id = $2))`,
+                [id, req.user.id]
+            );
+            if (ownershipRes.rows.length === 0) {
+                return res.status(403).json({ error: 'You can only view activities for deals in your team' });
+            }
+        }
+
         const result = await pool.query(
             `SELECT a.*, u.full_name AS actor_name
              FROM   activities a
@@ -634,88 +652,95 @@ app.get('/api/analytics/team', authorize(['admin', 'manager']), async (req, res)
 
 // FR-A.3 & 6.1: Lead Ingestion & Deals API
 app.post('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
-    name, comp_id, value, stage, probability, closing_date,
+    const {
+        name, comp_id, value, stage, probability, closing_date,
         level, offering, priority, frequency, remark,
         email, first_name, last_name, owner_id, next_follow_up // Email info for Lead Ingestion flow
-} = req.body;
+    } = req.body;
 
-try {
-    let final_comp_id = comp_id;
-    let final_cont_id = null;
+    try {
+        let final_comp_id = comp_id;
+        let final_cont_id = null;
 
-    // 6.1.2: System checks for Duplicate Email
-    if (email) {
-        const contactRes = await pool.query('SELECT cont_id, comp_id FROM contacts WHERE email = $1', [email]);
-        if (contactRes.rows.length > 0) {
-            final_cont_id = contactRes.rows[0].cont_id;
-            final_comp_id = final_comp_id || contactRes.rows[0].comp_id;
+        // 6.1.2: System checks for Duplicate Email
+        if (email) {
+            const contactRes = await pool.query('SELECT cont_id, comp_id FROM contacts WHERE email = $1', [email]);
+            if (contactRes.rows.length > 0) {
+                final_cont_id = contactRes.rows[0].cont_id;
+                final_comp_id = final_comp_id || contactRes.rows[0].comp_id;
 
-            // Check for active deals for this contact (Deduplication)
-            const activeDeals = await pool.query(
-                `SELECT deal_id FROM deals 
+                // Check for active deals for this contact (Deduplication)
+                const activeDeals = await pool.query(
+                    `SELECT deal_id FROM deals 
                      WHERE (owner_id IS NOT NULL OR stage = 'Lead') 
                      AND stage NOT IN ('Closed', 'Lost', 'Paid')
                      AND EXISTS (SELECT 1 FROM activities a WHERE a.deal_id = deals.deal_id AND a.cont_id = $1)
                      LIMIT 1`,
-                [final_cont_id]
-            );
-            if (activeDeals.rows.length > 0) {
-                return res.status(409).json({
-                    error: 'Duplicate Lead: This contact already has an active deal.',
-                    deal_id: activeDeals.rows[0].deal_id
-                });
-            }
-        } else if (first_name && last_name) {
-            // Create contact if unique
-            const newContact = await pool.query(
-                `INSERT INTO contacts (first_name, last_name, email, comp_id) 
+                    [final_cont_id]
+                );
+                if (activeDeals.rows.length > 0) {
+                    return res.status(409).json({
+                        error: 'Duplicate Lead: This contact already has an active deal.',
+                        deal_id: activeDeals.rows[0].deal_id
+                    });
+                }
+            } else if (first_name && last_name) {
+                // Create contact if unique
+                const newContact = await pool.query(
+                    `INSERT INTO contacts (first_name, last_name, email, comp_id) 
                      VALUES ($1, $2, $3, $4) RETURNING cont_id`,
-                [first_name, last_name, email, final_comp_id]
-            );
-            final_cont_id = newContact.rows[0].cont_id;
+                    [first_name, last_name, email, final_comp_id]
+                );
+                final_cont_id = newContact.rows[0].cont_id;
+            }
         }
-    }
 
-    // 6.1.3 & 6.1.5: Assignment & Lead Score
-    // If stage is 'Lead' and no owner_id is provided, we leave owner_id NULL 
-    // to let the Round-Robin automation service pick it up.
-    const finalOwnerId = owner_id || (stage === 'Lead' ? null : req.user.id);
-    const initialScore = 10;
+        // 6.1.3 & 6.1.5: Assignment & Lead Score
+        // RBAC: Reps MUST be the owner of leads they create manually
+        let finalOwnerId = owner_id;
+        if (req.user.role === 'rep') {
+            finalOwnerId = req.user.id;
+        } else if (!finalOwnerId) {
+            // Managers/Admins can create unassigned leads
+            finalOwnerId = (stage === 'Lead' ? null : req.user.id);
+        }
 
-    `INSERT INTO deals (
+        const initialScore = 10;
+        const result = await pool.query(
+            `INSERT INTO deals (
                 name, comp_id, value, stage, probability, closing_date, 
                 owner_id, level, offering, priority, frequency, remark, 
                 last_activity_date, lead_score, next_follow_up
              )
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14) RETURNING *`,
-        [
-            name, final_comp_id, value || 0, stage || 'Lead', probability || 10, closing_date,
-            finalOwnerId, level, offering, priority, frequency, remark, initialScore, next_follow_up
-        ]
+            [
+                name, final_comp_id, value || 0, stage || 'Lead', probability || 10, closing_date,
+                finalOwnerId, level, offering, priority, frequency, remark, initialScore, next_follow_up
+            ]
         );
-    const newDeal = result.rows[0];
+        const newDeal = result.rows[0];
 
-    // Link contact to deal in activities (as an initialization note)
-    if (final_cont_id) {
-        await pool.query(
-            `INSERT INTO activities (deal_id, cont_id, type, content) 
+        // Link contact to deal in activities (as an initialization note)
+        if (final_cont_id) {
+            await pool.query(
+                `INSERT INTO activities (deal_id, cont_id, type, content) 
                  VALUES ($1, $2, 'SYSTEM', 'Lead ingested via API/Manual Entry')`,
-            [newDeal.deal_id, final_cont_id]
-        );
+                [newDeal.deal_id, final_cont_id]
+            );
+        }
+
+        // Audit Log
+        await req.audit('CREATE', 'DEAL', newDeal.deal_id, null, newDeal);
+
+        // FR-C.3: Evaluate workflow rules on new deal
+        const triggeredRules = await evaluateWorkflowRules(pool, newDeal);
+        const ccManager = triggeredRules.some(r => r.action_type === 'cc_manager');
+
+        res.status(201).json({ ...newDeal, cc_manager: ccManager, triggered_rules: triggeredRules });
+    } catch (err) {
+        console.error('[DealIngestion] Error:', err);
+        res.status(500).json({ error: err.message });
     }
-
-    // Audit Log
-    await req.audit('CREATE', 'DEAL', newDeal.deal_id, null, newDeal);
-
-    // FR-C.3: Evaluate workflow rules on new deal
-    const triggeredRules = await evaluateWorkflowRules(pool, newDeal);
-    const ccManager = triggeredRules.some(r => r.action_type === 'cc_manager');
-
-    res.status(201).json({ ...newDeal, cc_manager: ccManager, triggered_rules: triggeredRules });
-} catch (err) {
-    console.error('[DealIngestion] Error:', err);
-    res.status(500).json({ error: err.message });
-}
 });
 
 app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, res) => {
@@ -842,11 +867,20 @@ app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, 
 
 // FR-B.1: Activity Logging API
 app.post('/api/activities', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
-    const { deal_id, type, content } = req.body; // type: CALL, EMAIL, NOTE, MEETING
+    const { deal_id, type, content } = req.body;
     try {
+        // RBAC: Reps can only log activities for their own deals
+        if (req.user.role === 'rep') {
+            const ownershipRes = await pool.query('SELECT owner_id FROM deals WHERE deal_id = $1', [deal_id]);
+            if (ownershipRes.rows.length === 0) return res.status(404).json({ error: 'Deal not found' });
+            if (ownershipRes.rows[0].owner_id !== req.user.id) {
+                return res.status(403).json({ error: 'You can only log activities for your own deals' });
+            }
+        }
+
         const result = await pool.query(
-            `INSERT INTO activities (deal_id, type, content) VALUES ($1, $2, $3) RETURNING *`,
-            [deal_id, type, content]
+            `INSERT INTO activities (deal_id, type, content, actor_id) VALUES ($1, $2, $3, $4) RETURNING *`,
+            [deal_id, type, content, req.user.id]
         );
         // The DB trigger trg_update_last_activity will auto-update deals.last_activity_date
         // and mark deal as no longer stale when activity is added

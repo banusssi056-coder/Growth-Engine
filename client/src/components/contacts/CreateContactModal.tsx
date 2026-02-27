@@ -96,6 +96,8 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                                 type="text"
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
+                                pattern="[A-Za-z\s\-']+"
+                                title="Please use only letters, spaces, hyphens, or apostrophes"
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="John"
                             />
@@ -107,6 +109,8 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                                 type="text"
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
+                                pattern="[A-Za-z\s\-']+"
+                                title="Please use only letters, spaces, hyphens, or apostrophes"
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="Doe"
                             />
@@ -127,11 +131,13 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</label>
                             <input
-                                type="text"
+                                type="tel"
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
+                                pattern="^\+?[0-9\s\-()]{7,20}$"
+                                title="Please enter a valid phone number (min 7 digits, may include +, spaces, or dashes)"
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
-                                placeholder="+1..."
+                                placeholder="+91 98765 43210"
                             />
                         </div>
                     </div>
@@ -145,8 +151,10 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                title="Please enter a valid email address (e.g., name@domain.com)"
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
-                                placeholder="john.doe@example.com"
+                                placeholder="john.doe@gmail.com"
                             />
                         </div>
                     </div>

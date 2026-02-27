@@ -39,10 +39,11 @@ pool.connect()
     })
     .catch(err => console.error('[Worker] ❌ DB connection failed:', err.message));
 
-// ── Job 1: Round-Robin Lead Assignment (Every 30 seconds) ─────────────────────────
+// ── Job 1: Round-Robin Lead Assignment & Follow-ups (Every 1 minute) ────────────────
 // In production, make this event-driven via Webhooks or Redis Pub/Sub
-cron.schedule('*/30 * * * * *', async () => {
+cron.schedule('* * * * *', async () => {
     await assignLeads(pool);
+    await checkFollowUps(pool);
 });
 
 // ── Job 2: Stale Lead Check (Every 12 hours) ────────────────────────────────────

@@ -92,7 +92,13 @@ export default function Dashboard() {
 
                 {/* Kanban Board */}
                 <main className="flex-1 overflow-y-auto p-6">
-                    <DealsTable deals={deals} />
+                    <DealsTable
+                        deals={deals}
+                        userRole={userRole}
+                        onDealUpdated={(id, patch) => {
+                            setDeals(prev => prev.map(d => d.deal_id === id ? { ...d, ...patch } : d));
+                        }}
+                    />
                 </main>
             </div>
         </ProtectedRoute>

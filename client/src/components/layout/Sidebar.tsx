@@ -10,9 +10,10 @@ import { NotificationBell } from './NotificationBell';
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
+    { label: 'Performance', icon: BarChart3, href: '/performance', roles: ['admin', 'manager'] },
     { label: 'Deals', icon: Briefcase, href: '/deals' },
     { label: 'Contacts', icon: Users, href: '/contacts' },
-    { label: 'Settings', icon: Settings, href: '/settings' },
+    { label: 'Settings', icon: Settings, href: '/settings', roles: ['admin'] },
 ];
 
 export function Sidebar() {
@@ -92,7 +93,7 @@ export function Sidebar() {
                     }} />
                     <div className="my-2 border-t border-slate-700/50" />
                     {NAV_ITEMS.filter(item => {
-                        if (item.label === 'Settings' && user?.role !== 'admin') return false;
+                        if (item.roles && !item.roles.includes(user?.role)) return false;
                         return true;
                     }).map((item) => (
                         <Link

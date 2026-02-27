@@ -7,6 +7,7 @@ interface Deal {
     deal_id: string;
     name: string;
     company_name: string;
+    owner_id?: string;
     owner_email?: string;
     value: number;
     stage: string;
@@ -18,6 +19,8 @@ interface Deal {
     remark?: string;
     lead_score?: number;
     last_activity_date?: string;
+    next_follow_up?: string;
+    follow_up_notified?: boolean;
 }
 
 interface DealsTableProps {
@@ -53,11 +56,33 @@ const STAGE_PROBABILITIES: Record<string, number> = {
 
 export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) {
     const isReadOnly = userRole === 'intern';
+    const canReassign = userRole === 'admin' || userRole === 'manager';
     const [localDeals, setLocalDeals] = useState(deals);
+    const [teamMembers, setTeamMembers] = useState<any[]>([]);
 
     useEffect(() => {
         setLocalDeals(deals);
     }, [deals]);
+
+    useEffect(() => {
+        if (canReassign) {
+            fetchTeamMembers();
+        }
+    }, [canReassign]);
+
+    const fetchTeamMembers = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/team`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            const data = await res.json();
+            if (Array.isArray(data)) setTeamMembers(data);
+        } catch (err) {
+            console.error("Failed to fetch team members", err);
+        }
+    };
 
     const handleStageChange = async (dealId: string, newStage: string) => {
         // Derive new probability from the stage map
@@ -88,6 +113,61 @@ export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) 
             onDealUpdated?.(dealId, { stage: newStage, probability: newProbability });
         } catch (err) {
             console.error("Failed to update stage", err);
+        }
+    };
+
+    const handleOwnerChange = async (dealId: string, newOwnerId: string) => {
+        const owner = teamMembers.find(u => u.user_id === newOwnerId);
+        if (!owner) return;
+
+        // Optimistic UI update
+        setLocalDeals(prev =>
+            prev.map(d =>
+                d.deal_id === dealId ? { ...d, owner_id: newOwnerId, owner_email: owner.email } : d
+            )
+        );
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ owner_id: newOwnerId })
+            });
+
+            onDealUpdated?.(dealId, { owner_id: newOwnerId, owner_email: owner.email });
+        } catch (err) {
+            console.error("Failed to reassign owner", err);
+        }
+    };
+
+    const handleFollowUpChange = async (dealId: string, value: string) => {
+        // Optimistic UI update
+        setLocalDeals(prev =>
+            prev.map(d => d.deal_id === dealId ? { ...d, next_follow_up: value, follow_up_notified: false } : d)
+        );
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ next_follow_up: value || null })
+            });
+
+            onDealUpdated?.(dealId, { next_follow_up: value || undefined });
+        } catch (err) {
+            console.error("Failed to update follow-up", err);
         }
     };
 
@@ -134,6 +214,7 @@ export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) 
                         <th className="px-3 py-2 bg-amber-100 text-slate-800 text-right w-28 border-r border-slate-200">Amount</th>
                         <th className="px-3 py-2 bg-lime-300 text-slate-800 w-24 border-r border-slate-200">Frequency</th>
                         <th className="px-3 py-2 bg-orange-500 text-white w-32 border-r border-slate-200 text-center">Activity</th>
+                        <th className="px-3 py-2 bg-orange-500 text-white w-40 border-r border-slate-200 text-center">Follow-up</th>
                         <th className="px-3 py-2 bg-orange-500 text-white border-r border-slate-200" style={{ minWidth: '220px' }}>Stage</th>
                         <th className="px-3 py-2 bg-lime-300 text-slate-800" style={{ minWidth: '220px' }}>Remark</th>
                     </tr>
@@ -165,7 +246,30 @@ export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) 
                                 )}
                             </td>
                             <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.company_name || '-'}</td>
-                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</td>
+                            <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs text-center">
+                                {canReassign ? (
+                                    <select
+                                        value={deal.owner_id || ''}
+                                        onChange={(e) => handleOwnerChange(deal.deal_id, e.target.value)}
+                                        className="bg-transparent border-none p-0 text-xs focus:ring-0 cursor-pointer hover:text-slate-900"
+                                    >
+                                        <option value="" disabled>Unassigned</option>
+                                        {/* If the current owner is inactive (not in teamMembers), show them as an option so the select has a label */}
+                                        {deal.owner_id && !teamMembers.find(m => m.user_id === deal.owner_id) && (
+                                            <option value={deal.owner_id}>
+                                                {deal.owner_email ? deal.owner_email.split('@')[0] : 'Inactive User'} (Inactive)
+                                            </option>
+                                        )}
+                                        {teamMembers.map(m => (
+                                            <option key={m.user_id} value={m.user_id}>
+                                                {m.full_name || m.email.split('@')[0]}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <span className="capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</span>
+                                )}
+                            </td>
                             <td className="text-right font-medium text-slate-900 border-r border-slate-100 px-3 py-2.5 text-sm">
                                 {formatCurrency(deal.value)}
                             </td>
@@ -184,6 +288,22 @@ export function DealsTable({ deals, userRole, onDealUpdated }: DealsTableProps) 
                                     </div>
                                 ) : (
                                     <span className="text-slate-400 text-xs">-</span>
+                                )}
+                            </td>
+
+                            {/* ── Next Follow-up ── */}
+                            <td className="px-2 py-2 border-r border-slate-100 text-center">
+                                <input
+                                    type="datetime-local"
+                                    value={deal.next_follow_up ? deal.next_follow_up.slice(0, 16) : ''}
+                                    onChange={(e) => handleFollowUpChange(deal.deal_id, e.target.value)}
+                                    className={`w-full bg-transparent border-none p-0 text-[10px] focus:ring-0 cursor-pointer 
+                                        ${deal.follow_up_notified ? 'text-slate-400 line-through' : 'text-slate-700 font-medium'}
+                                        hover:bg-slate-100 rounded transition-colors
+                                    `}
+                                />
+                                {deal.next_follow_up && !deal.follow_up_notified && new Date(deal.next_follow_up) < new Date() && (
+                                    <div className="text-[9px] text-red-500 font-bold uppercase mt-0.5">Overdue</div>
                                 )}
                             </td>
 

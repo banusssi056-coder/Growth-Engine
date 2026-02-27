@@ -427,4 +427,60 @@ function buildActionDescription(rule) {
     return actions[rule.action_type] || `Action: ${rule.action_type} = ${rule.action_value}`;
 }
 
-module.exports = { assignLeads, checkStaleLeads, evaluateWorkflowRules };
+async function checkFollowUps(pool) {
+    console.log('[The Brain] Checking for scheduled follow-ups...');
+    try {
+        const followUps = await pool.query(`
+            SELECT 
+                d.deal_id, d.name AS deal_name, d.next_follow_up,
+                u.user_id AS owner_id, u.email AS owner_email, u.full_name AS owner_name
+            FROM deals d
+            JOIN users u ON d.owner_id = u.user_id
+            WHERE 
+                d.next_follow_up <= NOW() 
+                AND d.follow_up_notified = FALSE
+                AND d.stage NOT IN ('Closed', 'Lost', 'Paid')
+        `);
+
+        console.log(`[The Brain] Found ${followUps.rows.length} due follow-ups.`);
+
+        for (const deal of followUps.rows) {
+            // 1. Send In-App Notification
+            await createNotification(pool, {
+                userId: deal.owner_id,
+                type: 'FOLLOW_UP',
+                title: `📅 Follow-up Reminder: ${deal.deal_name}`,
+                body: `It's time for your scheduled follow-up for "${deal.deal_name}".`,
+                dealId: deal.deal_id,
+            });
+
+            // 2. Send Email
+            await sendEmail({
+                to: deal.owner_email,
+                subject: `📅 Follow-up Reminder: ${deal.deal_name}`,
+                html: `
+                    <div style="font-family:sans-serif;max-width:560px;margin:auto">
+                        <h2 style="color:#10b981">📅 Follow-up Reminder</h2>
+                        <p>Hi ${deal.owner_name || deal.owner_email},</p>
+                        <p>This is a reminder for your scheduled follow-up for <strong>${deal.deal_name}</strong>.</p>
+                        <p>Scheduled for: ${new Date(deal.next_follow_up).toLocaleString()}</p>
+                        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
+                        <p style="color:#9ca3af;font-size:11px">SSSI GrowthEngine — Automated Follow-up</p>
+                    </div>
+                `
+            });
+
+            // 3. Mark as notified so we don't spam
+            await pool.query(
+                `UPDATE deals SET follow_up_notified = TRUE WHERE deal_id = $1`,
+                [deal.deal_id]
+            );
+
+            console.log(`[The Brain] Follow-up notification sent for Deal ${deal.deal_id} to ${deal.owner_email}`);
+        }
+    } catch (err) {
+        console.error('[The Brain] Follow-up Check Error:', err);
+    }
+}
+
+module.exports = { assignLeads, checkStaleLeads, evaluateWorkflowRules, checkFollowUps };

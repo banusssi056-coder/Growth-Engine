@@ -42,6 +42,7 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
     const [priority, setPriority] = useState('');
     const [frequency, setFrequency] = useState('OneTime');
     const [remark, setRemark] = useState('');
+    const [nextFollowUp, setNextFollowUp] = useState('');
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -100,7 +101,8 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
                     offering,
                     priority: priority ? parseFloat(priority) : null,
                     frequency,
-                    remark
+                    remark,
+                    next_follow_up: nextFollowUp || null
                 })
             });
 
@@ -306,6 +308,17 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
                                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             />
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700">Next Follow-up (Scheduled Alert)</label>
+                        <input
+                            type="datetime-local"
+                            value={nextFollowUp}
+                            onChange={e => setNextFollowUp(e.target.value)}
+                            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">System will notify you at this specific time.</p>
                     </div>
 
                     <div className="flex gap-2">

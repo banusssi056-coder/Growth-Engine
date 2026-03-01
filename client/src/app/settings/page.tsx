@@ -182,7 +182,7 @@ export default function Settings() {
 
     return (
         <ProtectedRoute>
-            <div className="p-6 max-w-6xl mx-auto">
+            <div className="p-6 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800">System Settings</h1>
@@ -206,8 +206,8 @@ export default function Settings() {
                         </h2>
                     </div>
 
-                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                        <table className="w-full text-left text-sm relative">
+                    <div className="overflow-x-auto max-h-[700px] overflow-y-auto">
+                        <table className="w-full text-left text-sm relative min-w-[1000px]">
                             <thead className="bg-slate-50 text-slate-600 font-medium sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th className="px-6 py-3">User</th>

@@ -202,21 +202,21 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
 
     return (
         <div className="overflow-x-auto border rounded-none shadow-sm bg-white">
-            <table className="w-full text-sm text-left border-collapse">
-                <thead>
-                    <tr className="border-b font-semibold text-slate-800 text-xs uppercase tracking-wider">
-                        <th className="px-2 py-2 bg-orange-500 text-white w-14 text-center border-r border-slate-200">Prio</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-44 border-r border-slate-200">Solid Deal</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-36 border-r border-slate-200">Offering</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-24 border-r border-slate-200">Level</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-36 border-r border-slate-200">Who Pays</th>
-                        <th className="px-3 py-2 bg-orange-500 text-white w-28 border-r border-slate-200">Sales Force</th>
-                        <th className="px-3 py-2 bg-amber-100 text-slate-800 text-right w-28 border-r border-slate-200">Amount</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800 w-24 border-r border-slate-200">Frequency</th>
-                        <th className="px-3 py-2 bg-orange-500 text-white w-32 border-r border-slate-200 text-center">Activity</th>
-                        <th className="px-3 py-2 bg-orange-500 text-white w-40 border-r border-slate-200 text-center">Follow-up</th>
-                        <th className="px-3 py-2 bg-orange-500 text-white border-r border-slate-200" style={{ minWidth: '220px' }}>Stage</th>
-                        <th className="px-3 py-2 bg-lime-300 text-slate-800" style={{ minWidth: '220px' }}>Remark</th>
+            <table className="w-full text-sm text-left border-collapse min-w-[1600px]">
+                <thead className="sticky top-0 z-20 shadow-sm">
+                    <tr className="border-b font-semibold text-xs uppercase tracking-wider">
+                        <th className="px-2 py-2 bg-orange-600 text-white w-14 text-center border-r border-slate-200 sticky top-0">Prio</th>
+                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-44 border-r border-slate-200 sticky top-0">Solid Deal</th>
+                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-36 border-r border-slate-200 sticky top-0">Offering</th>
+                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-24 border-r border-slate-200 sticky top-0">Level</th>
+                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-36 border-r border-slate-200 sticky top-0">Who Pays</th>
+                        <th className="px-3 py-2 bg-orange-600 text-white w-28 border-r border-slate-200 sticky top-0">Sales Force</th>
+                        <th className="px-3 py-2 bg-amber-200 text-slate-900 text-right w-28 border-r border-slate-200 sticky top-0">Amount</th>
+                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-24 border-r border-slate-200 sticky top-0">Frequency</th>
+                        <th className="px-3 py-2 bg-orange-600 text-white w-32 border-r border-slate-200 text-center sticky top-0">Activity</th>
+                        <th className="px-3 py-2 bg-orange-600 text-white w-40 border-r border-slate-200 text-center sticky top-0">Follow-up</th>
+                        <th className="px-3 py-2 bg-orange-600 text-white border-r border-slate-200 sticky top-0" style={{ minWidth: '220px' }}>Stage</th>
+                        <th className="px-3 py-2 bg-lime-400 text-slate-900 sticky top-0" style={{ minWidth: '220px' }}>Remark</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">

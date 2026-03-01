@@ -531,35 +531,22 @@ app.get('/api/companies', authorize(['admin', 'manager', 'rep', 'intern']), asyn
 // FR-B.2: Weighted Forecasting API
 app.get('/api/dashboard/stats', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
     try {
-        let whereClause = '';
-        const params = [];
-
-        if (req.user.role === 'rep') {
-            whereClause = ' WHERE (owner_id = $1 OR owner_id IS NULL)';
-            params.push(req.user.id);
-        } else if (req.user.role === 'manager') {
-            whereClause = ' WHERE (owner_id = $1 OR owner_id IS NULL OR owner_id IN (SELECT user_id FROM users WHERE manager_id = $1))';
-            params.push(req.user.id);
-        }
-
         const statsQuery = `
       SELECT 
         COUNT(*) as total_deals,
         SUM(value) as total_pipeline_value,
         SUM(value * probability / 100) as expected_revenue
       FROM deals
-      ${whereClause}
     `;
         const stageQuery = `
       SELECT stage, COUNT(*) as count, SUM(value) as value
       FROM deals
-      ${whereClause}
       GROUP BY stage
     `;
 
         const [statsResult, stageResult] = await Promise.all([
-            pool.query(statsQuery, params),
-            pool.query(stageQuery, params)
+            pool.query(statsQuery),
+            pool.query(stageQuery)
         ]);
 
         res.json({
@@ -603,22 +590,9 @@ app.get('/api/deals', authorize(['admin', 'manager', 'rep', 'intern']), async (r
       LEFT JOIN companies c ON d.comp_id = c.comp_id
       LEFT JOIN users u ON d.owner_id = u.user_id
     `;
-        const params = [];
-
-        // VALIDATION: RBAC Visibility
-        if (req.user.role === 'rep') {
-            query += ` WHERE (d.owner_id = $1 OR d.owner_id IS NULL)`;
-            params.push(req.user.id);
-        } else if (req.user.role === 'manager') {
-            // Manager sees OWN deals, UNASSIGNED deals, AND deals of direct reports
-            query += ` WHERE (d.owner_id = $1 OR d.owner_id IS NULL OR d.owner_id IN (SELECT user_id FROM users WHERE manager_id = $1))`;
-            params.push(req.user.id);
-        }
-        // Admin sees all (no clause)
-
         query += ` ORDER BY d.updated_at DESC`;
 
-        const result = await pool.query(query, params);
+        const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
         console.error(err);

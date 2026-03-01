@@ -42,7 +42,7 @@ export function DealCard({ deal, onLogActivity, isOverlay, userCanEdit = true }:
         <Card className={`group ${cursorClass} hover:shadow-md transition-shadow relative ${isOverlay ? 'shadow-xl cursor-grabbing' : ''}`}>
             <CardHeader className="p-4 flex flex-row items-start justify-between space-y-0 pb-2">
                 <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{deal.name}</div>
+                    <div className="font-medium text-sm">{deal.name}</div>
                     <div className="mt-1">
                         <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="sm" />
                     </div>
@@ -83,7 +83,7 @@ export function DealCard({ deal, onLogActivity, isOverlay, userCanEdit = true }:
                 </div>
 
                 {deal.remark && (
-                    <div className="text-[10px] text-slate-500 italic mb-2 line-clamp-2">
+                    <div className="text-[10px] text-slate-500 italic mb-2 line-clamp-4">
                         {deal.remark}
                     </div>
                 )}

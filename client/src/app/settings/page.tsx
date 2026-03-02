@@ -206,23 +206,23 @@ export default function Settings() {
                         </h2>
                     </div>
 
-                    <div className="overflow-x-auto max-h-[700px] overflow-y-auto">
-                        <table className="w-full text-left text-sm relative min-w-[1000px]">
-                            <thead className="bg-slate-50 text-slate-600 font-medium sticky top-0 z-10 shadow-sm">
+                    <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] custom-scrollbar">
+                        <table className="w-full text-left text-sm relative min-w-[1000px] border-separate border-spacing-0">
+                            <thead className="bg-slate-50 text-slate-600 font-semibold sticky top-0 z-20 shadow-sm">
                                 <tr>
-                                    <th className="px-6 py-3">User</th>
-                                    <th className="px-6 py-3">Role</th>
-                                    <th className="px-6 py-3">Reports To</th>
-                                    <th className="px-6 py-3">Weight (RR)</th>
-                                    <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3">Joined</th>
-                                    <th className="px-6 py-3 text-right">Actions</th>
+                                    <th className="px-6 py-4 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200 sticky left-0 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">User</th>
+                                    <th className="px-6 py-4 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">Role</th>
+                                    <th className="px-6 py-4 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">Reports To</th>
+                                    <th className="px-6 py-4 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">Weight (RR)</th>
+                                    <th className="px-6 py-4 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">Status</th>
+                                    <th className="px-6 py-4 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">Joined</th>
+                                    <th className="px-6 py-4 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
                                 {users.map((u) => (
-                                    <tr key={u.user_id} className="hover:bg-slate-50">
-                                        <td className="px-6 py-3 font-medium text-slate-900">{u.email}</td>
+                                    <tr key={u.user_id} className="hover:bg-slate-50 group">
+                                        <td className="px-6 py-3 font-medium text-slate-900 sticky left-0 z-10 bg-white group-hover:bg-slate-50 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">{u.email}</td>
                                         <td className="px-6 py-3">
                                             <select
                                                 value={u.role}

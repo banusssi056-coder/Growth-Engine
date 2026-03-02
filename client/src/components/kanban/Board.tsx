@@ -246,7 +246,7 @@ export function Board({ initialDeals, userRole, userId, onDealUpdated }: BoardPr
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
             >
-                <div className="flex h-full w-full gap-4 overflow-x-auto p-2 pb-4">
+                <div className="flex h-full w-full gap-4 overflow-x-auto p-2 pb-4 custom-scrollbar">
                     {stageConfigs.map((stage) => (
                         <Column
                             key={stage.stage_id}

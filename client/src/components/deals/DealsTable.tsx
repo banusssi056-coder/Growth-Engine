@@ -201,12 +201,12 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
     }
 
     return (
-        <div className="overflow-x-auto border rounded-none shadow-sm bg-white">
-            <table className="w-full text-sm text-left border-collapse min-w-[1600px]">
-                <thead className="sticky top-0 z-20 shadow-sm">
-                    <tr className="border-b font-semibold text-xs uppercase tracking-wider">
-                        <th className="px-2 py-2 bg-orange-600 text-white w-14 text-center border-r border-slate-200 sticky top-0">Prio</th>
-                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-44 border-r border-slate-200 sticky top-0">Solid Deal</th>
+        <div className="overflow-x-auto border rounded-lg shadow-sm bg-white custom-scrollbar max-h-[calc(100vh-280px)] overflow-y-auto">
+            <table className="w-full text-sm text-left border-collapse min-w-[1600px] border-separate border-spacing-0">
+                <thead className="sticky top-0 z-40 shadow-sm">
+                    <tr className="border-b font-semibold text-[10px] uppercase tracking-wider">
+                        <th className="px-2 py-3 bg-orange-600 text-white w-14 text-center border-r border-orange-700/30 sticky top-0 left-0 z-50">Prio</th>
+                        <th className="px-3 py-3 bg-lime-400 text-slate-900 w-44 border-r border-slate-200 sticky top-0 left-14 z-50 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Solid Deal</th>
                         <th className="px-3 py-2 bg-lime-400 text-slate-900 w-36 border-r border-slate-200 sticky top-0">Offering</th>
                         <th className="px-3 py-2 bg-lime-400 text-slate-900 w-24 border-r border-slate-200 sticky top-0">Level</th>
                         <th className="px-3 py-2 bg-lime-400 text-slate-900 w-36 border-r border-slate-200 sticky top-0">Who Pays</th>
@@ -224,8 +224,8 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
                         const rowReadOnly = userRole === 'intern' || (userRole === 'rep' && deal.owner_id !== userId);
                         return (
                             <tr key={deal.deal_id} className="hover:bg-slate-50 transition-colors group align-top">
-                                <td className="px-2 py-2.5 text-center text-slate-600 border-r border-slate-100 bg-slate-50/50 text-xs">{deal.priority || '-'}</td>
-                                <td className="px-3 py-2.5 border-r border-slate-100">
+                                <td className="px-2 py-2.5 text-center text-slate-600 border-r border-slate-100 bg-slate-50 sticky left-0 z-10 text-xs">{deal.priority || '-'}</td>
+                                <td className="px-3 py-2.5 border-r border-slate-100 bg-white sticky left-14 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
                                     <div className="font-medium text-slate-900 text-sm mb-1">{deal.name}</div>
                                     <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="sm" />
                                 </td>

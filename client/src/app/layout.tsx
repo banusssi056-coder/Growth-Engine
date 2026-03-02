@@ -24,7 +24,9 @@ export default function RootLayout({
             {/* Sidebar - typically only for authenticated routes, but global for demo */}
             <Sidebar />
             <div className="flex-1 flex flex-col h-full overflow-hidden">
-              {children}
+              <main className="flex-1 overflow-y-auto custom-scrollbar">
+                {children}
+              </main>
             </div>
           </div>
         </GlobalSearchProvider>

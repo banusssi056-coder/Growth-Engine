@@ -88,10 +88,11 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                             type="text"
                             value={name}
                             onChange={e => setName(e.target.value)}
-                            pattern="[A-Za-z\s]+"
-                            title="Please use only letters and spaces"
+                            pattern="[A-Za-z]+"
+                            onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please use only letters (no spaces or numbers)')}
+                            onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            placeholder="Acme Corp"
+                            placeholder="Acme"
                         />
                     </div>
                     <div>

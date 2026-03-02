@@ -207,6 +207,7 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
                     <tr className="font-semibold text-[10px] uppercase tracking-wider text-slate-500">
                         <th className="px-2 py-4 bg-slate-50/95 backdrop-blur-md w-14 text-center border-b border-r border-slate-200 sticky top-0 left-0 z-50">#</th>
                         <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md min-w-[200px] border-b border-r border-slate-200 sticky top-0 left-14 z-50 shadow-[2px_0_10px_rgba(0,0,0,0.03)]">Opportunity</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md w-24 border-b border-r border-slate-200 sticky top-0 text-center">Score</th>
                         <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md min-w-[150px] border-b border-r border-slate-200 sticky top-0">Offering</th>
                         <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md w-24 border-b border-r border-slate-200 sticky top-0">Tier</th>
                         <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md border-b border-r border-slate-200 sticky top-0">Account</th>
@@ -227,7 +228,9 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
                                 <td className="px-2 py-4 text-center text-slate-400 border-r border-slate-100 bg-slate-50/30 sticky left-0 z-10 text-[11px] font-mono">{deal.priority || '-'}</td>
                                 <td className="px-4 py-4 border-r border-slate-100 bg-white sticky left-14 z-10 shadow-[2px_0_10px_rgba(0,0,0,0.01)]">
                                     <div className="font-semibold text-slate-800 text-sm mb-1 line-clamp-1">{deal.name}</div>
-                                    <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="sm" />
+                                </td>
+                                <td className="px-4 py-4 border-r border-slate-100 text-center">
+                                    <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="md" showLabel={true} />
                                 </td>
                                 <td className="px-4 py-4 text-slate-600 border-r border-slate-100 text-xs">
                                     <span className="bg-slate-100 px-2 py-1 rounded text-slate-700">{deal.offering || '-'}</span>
@@ -281,10 +284,17 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
                                     {deal.last_activity_date ? (
                                         <div className="flex flex-col items-center">
                                             <div className="text-[11px] font-bold text-slate-700">
-                                                {new Date(deal.last_activity_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                                {new Date(deal.last_activity_date).toLocaleDateString('en-GB', {
+                                                    day: '2-digit',
+                                                    month: '2-digit',
+                                                    year: 'numeric'
+                                                })}
                                             </div>
-                                            <div className="text-[9px] text-slate-400">
-                                                {new Date(deal.last_activity_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                            <div className="text-[10px] text-slate-500 font-medium">
+                                                {new Date(deal.last_activity_date).toLocaleTimeString('en-GB', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
                                             </div>
                                         </div>
                                     ) : (

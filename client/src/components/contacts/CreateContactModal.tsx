@@ -18,6 +18,7 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
     const [compId, setCompId] = useState('');
     const [companies, setCompanies] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
         if (isOpen) {
@@ -94,24 +95,34 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                             <input
                                 type="text"
                                 value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                pattern="[A-Za-z\s]+"
-                                title="Please use only letters and spaces"
+                                onChange={(e) => {
+                                    setFirstName(e.target.value);
+                                    if (errors.firstName) setErrors(prev => ({ ...prev, firstName: '' }));
+                                }}
+                                pattern="[A-Za-z]+"
+                                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please use only letters (no spaces or numbers)')}
+                                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="John"
                             />
+                            {errors.firstName && <p className="text-[10px] text-red-500">{errors.firstName}</p>}
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Name</label>
                             <input
                                 type="text"
                                 value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                pattern="[A-Za-z\s]+"
-                                title="Please use only letters and spaces"
+                                onChange={(e) => {
+                                    setLastName(e.target.value);
+                                    if (errors.lastName) setErrors(prev => ({ ...prev, lastName: '' }));
+                                }}
+                                pattern="[A-Za-z]+"
+                                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please use only letters (no spaces or numbers)')}
+                                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="Doe"
                             />
+                            {errors.lastName && <p className="text-[10px] text-red-500">{errors.lastName}</p>}
                         </div>
                     </div>
 
@@ -131,12 +142,17 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                             <input
                                 type="tel"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={(e) => {
+                                    setPhone(e.target.value);
+                                    if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+                                }}
                                 pattern="[0-9]{10}"
-                                title="Please enter exactly 10 digits"
+                                onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter exactly 10 digits')}
+                                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="9876543210"
                             />
+                            {errors.phone && <p className="text-[10px] text-red-500">{errors.phone}</p>}
                         </div>
                     </div>
 
@@ -147,11 +163,21 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                             <input
                                 type="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                                }}
+                                onInvalid={(e) => {
+                                    if (!(e.target as HTMLInputElement).validity.valid) {
+                                        (e.target as HTMLInputElement).setCustomValidity('Please enter a valid email address (e.g. name@example.com)');
+                                    }
+                                }}
+                                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="john.doe@gmail.com"
                             />
                         </div>
+                        {errors.email && <p className="text-[10px] text-red-500">{errors.email}</p>}
                     </div>
 
                     <div className="space-y-1.5">

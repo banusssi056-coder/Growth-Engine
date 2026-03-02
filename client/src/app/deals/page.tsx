@@ -133,7 +133,7 @@ export default function Deals() {
                 </div>
 
                 {/* ── Content ─────────────────────────────────────────────── */}
-                <div className="flex-1 overflow-hidden p-4 bg-slate-50">
+                <div className="flex-1 overflow-hidden bg-white">
                     {viewMode === 'board' ? (
                         <Board
                             initialDeals={deals}

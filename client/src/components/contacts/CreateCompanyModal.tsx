@@ -82,24 +82,24 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-700">
-                            Company Name <span className="text-red-500">*</span>
+                            Company Name
                         </label>
                         <input
                             type="text"
-                            required
                             value={name}
                             onChange={e => setName(e.target.value)}
+                            pattern="[A-Za-z\s]+"
+                            title="Please use only letters and spaces"
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             placeholder="Acme Corp"
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700">
-                            Domain <span className="text-red-500">*</span>
+                            Domain
                         </label>
                         <input
                             type="text"
-                            required
                             value={domain}
                             onChange={e => setDomain(e.target.value)}
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -108,11 +108,10 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700">
-                            Industry <span className="text-red-500">*</span>
+                            Industry
                         </label>
                         <input
                             type="text"
-                            required
                             value={industry}
                             onChange={e => setIndustry(e.target.value)}
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -121,11 +120,10 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700">
-                            Annual Revenue ({CURRENCY_CONFIG.symbol}) <span className="text-red-500">*</span>
+                            Annual Revenue ({CURRENCY_CONFIG.symbol})
                         </label>
                         <input
                             type="number"
-                            required
                             value={revenue}
                             onChange={e => setRevenue(e.target.value)}
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -135,7 +133,7 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
 
                     <button
                         type="submit"
-                        disabled={loading || !name || !domain || !industry || !revenue}
+                        disabled={loading}
                         className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Adding...' : 'Add Company'}

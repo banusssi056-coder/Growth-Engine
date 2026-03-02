@@ -179,7 +179,7 @@ async function checkStaleLeads(pool) {
                  VALUES ($1, 'ALERT', $2)`,
                 [
                     deal.deal_id,
-                    `[STALE ALERT] Deal inactive for ${daysSince} day(s). Owner: ${deal.owner_email}.`,
+                    `Stale Alert Triggered – 3 Days Inactive.`,
                 ]
             );
 
@@ -295,6 +295,7 @@ async function checkStaleLeads(pool) {
             await pool.query(
                 `UPDATE deals
                  SET cold_pool  = TRUE,
+                     stage      = 'Cold Pool',
                      owner_id   = NULL,
                      is_stale   = TRUE,
                      updated_at = NOW()
@@ -308,7 +309,7 @@ async function checkStaleLeads(pool) {
                  VALUES ($1, 'SYSTEM', $2)`,
                 [
                     deal.deal_id,
-                    `[COLD POOL] Deal moved to Cold Pool after ${daysSince} days of inactivity. Owner unassigned.`,
+                    `Stale Alert Triggered – 10 Days Inactive.`,
                 ]
             );
 

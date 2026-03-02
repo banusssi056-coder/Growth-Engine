@@ -73,11 +73,6 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!compId) {
-            alert("Please select a company. If none exist, add one in Contacts first.");
-            return;
-        }
-
         setLoading(true);
 
         const { data: { session } } = await supabase.auth.getSession();
@@ -92,10 +87,10 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
                 },
                 body: JSON.stringify({
                     name,
-                    comp_id: compId,
-                    value: parseFloat(value),
+                    comp_id: compId || null,
+                    value: value ? parseFloat(value) : 0,
                     stage,
-                    probability: parseInt(probability),
+                    probability: probability ? parseInt(probability) : 10,
                     closing_date: closingDate || null,
                     level,
                     offering,
@@ -141,9 +136,10 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
                         <label className="block text-sm font-medium text-slate-700">Deal Name</label>
                         <input
                             type="text"
-                            required
                             value={name}
                             onChange={e => setName(e.target.value)}
+                            pattern="[A-Za-z\s]+"
+                            title="Please use only letters and spaces"
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             placeholder="e.g. Q4 Software License"
                         />
@@ -235,13 +231,13 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700">Company</label>
+                        <label className="block text-sm font-medium text-slate-700">Company (Optional)</label>
                         <select
                             value={compId}
                             onChange={e => setCompId(e.target.value)}
                             className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         >
-                            <option value="" disabled>Select a company</option>
+                            <option value="">No company</option>
                             {companies.map(c => (
                                 <option key={c.comp_id} value={c.comp_id}>{c.name}</option>
                             ))}
@@ -254,7 +250,6 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
                             <label className="block text-sm font-medium text-slate-700">Value ({CURRENCY_CONFIG.symbol})</label>
                             <input
                                 type="number"
-                                required
                                 value={value}
                                 onChange={e => setValue(e.target.value)}
                                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -265,7 +260,6 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
                             <label className="block text-sm font-medium text-slate-700">Probability (%)</label>
                             <input
                                 type="number"
-                                required
                                 min="0" max="100"
                                 value={probability}
                                 onChange={e => setProbability(e.target.value)}

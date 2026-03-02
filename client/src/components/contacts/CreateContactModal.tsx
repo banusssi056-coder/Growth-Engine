@@ -92,12 +92,11 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">First Name</label>
                             <input
-                                required
                                 type="text"
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
-                                pattern="[A-Za-z\s\-']+"
-                                title="Please use only letters, spaces, hyphens, or apostrophes"
+                                pattern="[A-Za-z\s]+"
+                                title="Please use only letters and spaces"
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="John"
                             />
@@ -105,12 +104,11 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Name</label>
                             <input
-                                required
                                 type="text"
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
-                                pattern="[A-Za-z\s\-']+"
-                                title="Please use only letters, spaces, hyphens, or apostrophes"
+                                pattern="[A-Za-z\s]+"
+                                title="Please use only letters and spaces"
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="Doe"
                             />
@@ -129,15 +127,15 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</label>
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone (10 digits)</label>
                             <input
                                 type="tel"
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
-                                pattern="^\+?[0-9\s\-()]{7,20}$"
-                                title="Please enter a valid phone number (min 7 digits, may include +, spaces, or dashes)"
+                                pattern="[0-9]{10}"
+                                title="Please enter exactly 10 digits"
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
-                                placeholder="+91 98765 43210"
+                                placeholder="9876543210"
                             />
                         </div>
                     </div>
@@ -147,12 +145,9 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                             <input
-                                required
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                                title="Please enter a valid email address (e.g., name@domain.com)"
                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 py-2 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                                 placeholder="john.doe@gmail.com"
                             />

@@ -103,64 +103,66 @@ export default function Contacts() {
 
     return (
         <ProtectedRoute>
-            <div className="flex flex-col h-full bg-slate-50 p-6 overflow-hidden">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Directory</h1>
-                        <p className="text-sm text-slate-500">Manage your companies and individual contacts.</p>
-                    </div>
-                    <div className="flex gap-2">
-                        {activeTab === 'companies' ? (
-                            <button
-                                onClick={() => setIsCompanyModalOpen(true)}
-                                className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
-                            >
-                                <Plus size={16} />
-                                Add Company
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => setIsContactModalOpen(true)}
-                                className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
-                            >
-                                <Plus size={16} />
-                                Add Contact
-                            </button>
-                        )}
+            <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
+                <div className="p-4 md:p-8 bg-white border-b border-slate-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-800">Directory</h1>
+                            <p className="text-sm text-slate-500">Manage your companies and individual contacts.</p>
+                        </div>
+                        <div className="flex gap-2">
+                            {activeTab === 'companies' ? (
+                                <button
+                                    onClick={() => setIsCompanyModalOpen(true)}
+                                    className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                                >
+                                    <Plus size={16} />
+                                    Add Company
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setIsContactModalOpen(true)}
+                                    className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                                >
+                                    <Plus size={16} />
+                                    Add Contact
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Tab Switcher */}
-                <div className="flex border-b border-slate-200 mb-6">
+                <div className="flex border-b border-slate-200 mb-0 px-4 md:px-8 pt-4">
                     <button
                         onClick={() => setActiveTab('companies')}
-                        className={`px-6 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'companies'
+                        className={`px-6 py-3 text-sm font-semibold border-b-2 transition-all ${activeTab === 'companies'
                             ? 'border-emerald-600 text-emerald-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            : 'border-transparent text-slate-500 hover:text-slate-800'
                             }`}
                     >
                         Companies
                     </button>
                     <button
                         onClick={() => setActiveTab('contacts')}
-                        className={`px-6 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'contacts'
+                        className={`px-6 py-3 text-sm font-semibold border-b-2 transition-all ${activeTab === 'contacts'
                             ? 'border-emerald-600 text-emerald-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            : 'border-transparent text-slate-500 hover:text-slate-800'
                             }`}
                     >
                         Contacts
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-auto bg-white rounded-lg border border-slate-200 shadow-sm">
+                <div className="flex-1 overflow-auto bg-white custom-scrollbar">
                     {loading ? (
                         <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
                             <div className="w-8 h-8 border-4 border-emerald-600/20 border-t-emerald-600 rounded-full animate-spin"></div>
                             Loading directory...
                         </div>
                     ) : (
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 sticky top-0 z-10">
+                        <table className="w-full text-left text-sm min-w-full">
+                            <thead className="bg-slate-50/80 backdrop-blur-sm text-slate-500 border-b border-slate-200 sticky top-0 z-10">
                                 {activeTab === 'companies' ? (
                                     <tr>
                                         <th className="px-6 py-3 font-semibold text-xs uppercase tracking-wider">Company</th>
@@ -219,10 +221,15 @@ export default function Contacts() {
                                         <tr key={contact.cont_id} className="hover:bg-slate-50 group transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex h-8 w-8 items-center justify-center rounded bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold text-xs">
-                                                        {contact.first_name[0]}{contact.last_name[0]}
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold text-xs uppercase">
+                                                        {(contact.first_name?.[0] || contact.email?.[0] || '?')}{(contact.last_name?.[0] || '')}
                                                     </div>
-                                                    <div className="font-medium text-slate-900">{contact.first_name} {contact.last_name}</div>
+                                                    <div className="font-medium text-slate-900">
+                                                        {contact.first_name || contact.last_name ?
+                                                            `${contact.first_name || ''} ${contact.last_name || ''}`.trim() :
+                                                            (contact.email || 'Unnamed Contact')
+                                                        }
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-slate-600">

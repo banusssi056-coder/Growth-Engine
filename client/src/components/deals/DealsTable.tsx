@@ -201,65 +201,65 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
     }
 
     return (
-        <div className="overflow-x-auto border rounded-lg shadow-sm bg-white custom-scrollbar max-h-[calc(100vh-280px)] overflow-y-auto">
-            <table className="w-full text-sm text-left border-collapse min-w-[1600px] border-separate border-spacing-0">
-                <thead className="sticky top-0 z-40 shadow-sm">
-                    <tr className="border-b font-semibold text-[10px] uppercase tracking-wider">
-                        <th className="px-2 py-3 bg-orange-600 text-white w-14 text-center border-r border-orange-700/30 sticky top-0 left-0 z-50">Prio</th>
-                        <th className="px-3 py-3 bg-lime-400 text-slate-900 w-44 border-r border-slate-200 sticky top-0 left-14 z-50 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Solid Deal</th>
-                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-36 border-r border-slate-200 sticky top-0">Offering</th>
-                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-24 border-r border-slate-200 sticky top-0">Level</th>
-                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-36 border-r border-slate-200 sticky top-0">Who Pays</th>
-                        <th className="px-3 py-2 bg-orange-600 text-white w-28 border-r border-slate-200 sticky top-0">Sales Force</th>
-                        <th className="px-3 py-2 bg-amber-200 text-slate-900 text-right w-28 border-r border-slate-200 sticky top-0">Amount</th>
-                        <th className="px-3 py-2 bg-lime-400 text-slate-900 w-24 border-r border-slate-200 sticky top-0">Frequency</th>
-                        <th className="px-3 py-2 bg-orange-600 text-white w-32 border-r border-slate-200 text-center sticky top-0">Activity</th>
-                        <th className="px-3 py-2 bg-orange-600 text-white w-40 border-r border-slate-200 text-center sticky top-0">Follow-up</th>
-                        <th className="px-3 py-2 bg-orange-600 text-white border-r border-slate-200 sticky top-0" style={{ minWidth: '220px' }}>Stage</th>
-                        <th className="px-3 py-2 bg-lime-400 text-slate-900 sticky top-0" style={{ minWidth: '220px' }}>Remark</th>
+        <div className="w-full border rounded-xl shadow-sm bg-white custom-scrollbar overflow-x-auto">
+            <table className="w-full text-sm text-left border-collapse min-w-full border-separate border-spacing-0">
+                <thead className="sticky top-0 z-40">
+                    <tr className="font-semibold text-[10px] uppercase tracking-wider text-slate-500">
+                        <th className="px-2 py-4 bg-slate-50/95 backdrop-blur-md w-14 text-center border-b border-r border-slate-200 sticky top-0 left-0 z-50">#</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md min-w-[200px] border-b border-r border-slate-200 sticky top-0 left-14 z-50 shadow-[2px_0_10px_rgba(0,0,0,0.03)]">Opportunity</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md min-w-[150px] border-b border-r border-slate-200 sticky top-0">Offering</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md w-24 border-b border-r border-slate-200 sticky top-0">Tier</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md border-b border-r border-slate-200 sticky top-0">Account</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md w-36 border-b border-r border-slate-200 sticky top-0 text-center">Owner</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md w-32 border-b border-r border-slate-200 sticky top-0 text-right">Value</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md w-28 border-b border-r border-slate-200 sticky top-0 text-center">Cycle</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md w-32 border-b border-r border-slate-200 sticky top-0 text-center">Last Activity</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md w-40 border-b border-r border-slate-200 sticky top-0 text-center">Next Step</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md min-w-[220px] border-b border-r border-slate-200 sticky top-0">Status</th>
+                        <th className="px-4 py-4 bg-slate-50/95 backdrop-blur-md min-w-[250px] border-b sticky top-0">Notes</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
                     {localDeals.map((deal) => {
                         const rowReadOnly = userRole === 'intern' || (userRole === 'rep' && deal.owner_id !== userId);
                         return (
-                            <tr key={deal.deal_id} className="hover:bg-slate-50 transition-colors group align-top">
-                                <td className="px-2 py-2.5 text-center text-slate-600 border-r border-slate-100 bg-slate-50 sticky left-0 z-10 text-xs">{deal.priority || '-'}</td>
-                                <td className="px-3 py-2.5 border-r border-slate-100 bg-white sticky left-14 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                    <div className="font-medium text-slate-900 text-sm mb-1">{deal.name}</div>
+                            <tr key={deal.deal_id} className="hover:bg-slate-50/80 transition-all group align-top">
+                                <td className="px-2 py-4 text-center text-slate-400 border-r border-slate-100 bg-slate-50/30 sticky left-0 z-10 text-[11px] font-mono">{deal.priority || '-'}</td>
+                                <td className="px-4 py-4 border-r border-slate-100 bg-white sticky left-14 z-10 shadow-[2px_0_10px_rgba(0,0,0,0.01)]">
+                                    <div className="font-semibold text-slate-800 text-sm mb-1 line-clamp-1">{deal.name}</div>
                                     <LeadScoreBadge dealId={deal.deal_id} initialScore={deal.lead_score || 0} size="sm" />
                                 </td>
-                                <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.offering || '-'}</td>
-                                {/* Level badge */}
-                                <td className="px-3 py-2.5 border-r border-slate-100">
+                                <td className="px-4 py-4 text-slate-600 border-r border-slate-100 text-xs">
+                                    <span className="bg-slate-100 px-2 py-1 rounded text-slate-700">{deal.offering || '-'}</span>
+                                </td>
+                                <td className="px-4 py-4 border-r border-slate-100">
                                     {deal.level ? (
-                                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide
+                                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
                                         ${deal.level === 'Enterprise'
-                                                ? 'bg-purple-100 text-purple-700'
+                                                ? 'bg-indigo-100 text-indigo-700'
                                                 : deal.level === 'Premium'
                                                     ? 'bg-amber-100 text-amber-700'
-                                                    : 'bg-slate-100 text-slate-600'
+                                                    : 'bg-emerald-100 text-emerald-700'
                                             }`}
                                         >
                                             {deal.level}
                                         </span>
                                     ) : (
-                                        <span className="text-slate-400 text-xs">-</span>
+                                        <span className="text-slate-300 text-xs">-</span>
                                     )}
                                 </td>
-                                <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.company_name || '-'}</td>
-                                <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs text-center">
+                                <td className="px-4 py-4 text-slate-700 border-r border-slate-100 text-xs font-medium">{deal.company_name || '-'}</td>
+                                <td className="px-4 py-4 text-slate-600 border-r border-slate-100 text-xs text-center">
                                     {canReassign ? (
                                         <select
                                             value={deal.owner_id || ''}
                                             onChange={(e) => handleOwnerChange(deal.deal_id, e.target.value)}
-                                            className="bg-transparent border-none p-0 text-xs focus:ring-0 cursor-pointer hover:text-slate-900"
+                                            className="bg-transparent border-none p-0 text-xs focus:ring-0 cursor-pointer hover:text-slate-900 w-full text-center"
                                         >
                                             <option value="" disabled>Unassigned</option>
-                                            {/* If the current owner is inactive (not in teamMembers), show them as an option so the select has a label */}
                                             {deal.owner_id && !teamMembers.find(m => m.user_id === deal.owner_id) && (
                                                 <option value={deal.owner_id}>
-                                                    {deal.owner_email ? deal.owner_email.split('@')[0] : 'Inactive User'} (Inactive)
+                                                    {deal.owner_email ? deal.owner_email.split('@')[0] : 'Inactive'}
                                                 </option>
                                             )}
                                             {teamMembers.map(m => (
@@ -272,16 +272,15 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
                                         <span className="capitalize">{deal.owner_email ? deal.owner_email.split('@')[0] : '-'}</span>
                                     )}
                                 </td>
-                                <td className="text-right font-medium text-slate-900 border-r border-slate-100 px-3 py-2.5 text-sm">
+                                <td className="text-right font-bold text-slate-900 border-r border-slate-100 px-4 py-4 text-sm">
                                     {formatCurrency(deal.value)}
                                 </td>
-                                <td className="px-3 py-2.5 text-slate-600 border-r border-slate-100 text-xs">{deal.frequency || '-'}</td>
+                                <td className="px-4 py-4 text-slate-500 border-r border-slate-100 text-[11px] text-center font-medium capitalize">{deal.frequency || '-'}</td>
 
-                                {/* ── Last Activity Date ── */}
-                                <td className="px-3 py-2.5 text-center border-r border-slate-100">
+                                <td className="px-4 py-4 text-center border-r border-slate-100">
                                     {deal.last_activity_date ? (
                                         <div className="flex flex-col items-center">
-                                            <div className="text-[11px] font-medium text-slate-700">
+                                            <div className="text-[11px] font-bold text-slate-700">
                                                 {new Date(deal.last_activity_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                                             </div>
                                             <div className="text-[9px] text-slate-400">
@@ -289,49 +288,45 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
                                             </div>
                                         </div>
                                     ) : (
-                                        <span className="text-slate-400 text-xs">-</span>
+                                        <span className="text-slate-300 text-xs">-</span>
                                     )}
                                 </td>
 
-                                {/* ── Next Follow-up ── */}
-                                <td className="px-2 py-2 border-r border-slate-100 text-center">
+                                <td className="px-4 py-4 border-r border-slate-100 text-center">
                                     <input
                                         type="datetime-local"
                                         value={deal.next_follow_up ? deal.next_follow_up.slice(0, 16) : ''}
                                         onChange={(e) => handleFollowUpChange(deal.deal_id, e.target.value)}
-                                        className={`w-full bg-transparent border-none p-0 text-[10px] focus:ring-0 cursor-pointer 
-                                        ${deal.follow_up_notified ? 'text-slate-400 line-through' : 'text-slate-700 font-medium'}
-                                        hover:bg-slate-100 rounded transition-colors
+                                        className={`w-full bg-slate-50 border-none px-2 py-1 text-[10px] focus:ring-2 focus:ring-slate-200 cursor-pointer rounded-md
+                                        ${deal.follow_up_notified ? 'text-slate-400 line-through' : 'text-slate-700 font-bold'}
+                                        transition-all
                                     `}
                                     />
                                     {deal.next_follow_up && !deal.follow_up_notified && new Date(deal.next_follow_up) < new Date() && (
-                                        <div className="text-[9px] text-red-500 font-bold uppercase mt-0.5">Overdue</div>
+                                        <div className="text-[9px] text-rose-500 font-black uppercase mt-1">Overdue</div>
                                     )}
                                 </td>
 
-                                {/* ── Stage dropdown — wide enough to show full stage name ── */}
-                                <td className="px-2 py-2 border-r border-slate-100">
+                                <td className="px-4 py-4 border-r border-slate-100">
                                     <select
                                         value={deal.stage}
                                         disabled={rowReadOnly}
                                         onChange={(e) => handleStageChange(deal.deal_id, e.target.value)}
-                                        style={{ minWidth: '200px' }}
-                                        className={`block w-full rounded py-1.5 px-2 text-xs font-medium 
-                                        border focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-400
+                                        className={`block w-full rounded-lg py-1.5 px-3 text-[10px] font-bold uppercase tracking-wider
+                                        border-none focus:ring-2 focus:ring-slate-300
                                         ${rowReadOnly ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}
-                                        ${deal.stage.startsWith('1') ? 'bg-blue-50    text-blue-800    border-blue-200' :
-                                                deal.stage.startsWith('8') ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                                                    deal.stage.startsWith('9') ? 'bg-red-50     text-red-800     border-red-200' :
-                                                        deal.stage.startsWith('7') ? 'bg-slate-100  text-slate-700   border-slate-300' :
-                                                            'bg-amber-50   text-amber-800   border-amber-200'}
+                                        ${deal.stage.startsWith('1') ? 'bg-blue-100    text-blue-700' :
+                                                deal.stage.startsWith('8') ? 'bg-emerald-100 text-emerald-700' :
+                                                    deal.stage.startsWith('9') ? 'bg-rose-100     text-rose-700' :
+                                                        deal.stage.startsWith('7') ? 'bg-slate-200  text-slate-700' :
+                                                            'bg-amber-100   text-amber-800'}
                                     `}
                                     >
-                                        {STAGES.map(s => <option key={s} value={s} className="bg-white text-slate-800">{s}</option>)}
+                                        {STAGES.map(s => <option key={s} value={s} className="bg-white text-slate-800 lowercase">{s}</option>)}
                                     </select>
                                 </td>
 
-                                {/* ── Remark — Always visible full text ── */}
-                                <td className="px-2 py-2 bg-white">
+                                <td className="px-4 py-4">
                                     <RemarkTextarea
                                         value={deal.remark || ''}
                                         readOnly={rowReadOnly}

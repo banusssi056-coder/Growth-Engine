@@ -69,21 +69,21 @@ export default function Dashboard() {
         <ProtectedRoute>
             <div className="h-full flex flex-col overflow-hidden bg-slate-100">
                 {/* Header Stats */}
-                <header className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                <header className="flex-none bg-white border-b border-slate-200 px-6 py-8 flex justify-between items-center bg-gradient-to-r from-white to-slate-50">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Sales Pipeline</h1>
-                        <p className="text-sm text-slate-500">Manage your active deals and track progress.</p>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Executive Dashboard</h1>
+                        <p className="text-slate-500 font-medium mt-1">Real-time overview of your sales ecosystem performance.</p>
                     </div>
-                    <div className="flex gap-6">
+                    <div className="flex gap-12">
                         <div className="text-right">
-                            <div className="text-sm text-slate-500">Total Pipeline</div>
-                            <div className="text-xl font-bold text-slate-900">
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 px-1">Total Pipeline</div>
+                            <div className="text-3xl font-black text-slate-900 tracking-tighter">
                                 {formatCurrency(stats?.total_pipeline_value)}
                             </div>
                         </div>
                         <div className="text-right">
-                            <div className="text-sm text-slate-500">Weighted Forecast</div>
-                            <div className="text-xl font-bold text-emerald-600">
+                            <div className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-1 px-1 underline decoration-emerald-200 decoration-2 underline-offset-4">Weighted Forecast</div>
+                            <div className="text-3xl font-black text-emerald-600 tracking-tighter shadow-emerald-100 drop-shadow-sm">
                                 {formatCurrency(stats?.expected_revenue)}
                             </div>
                         </div>
@@ -91,14 +91,16 @@ export default function Dashboard() {
                 </header>
 
                 {/* Kanban Board */}
-                <main className="flex-1 overflow-y-auto p-6">
-                    <DealsTable
-                        deals={deals}
-                        userRole={userRole}
-                        onDealUpdated={(id, patch) => {
-                            setDeals(prev => prev.map(d => d.deal_id === id ? { ...d, ...patch } : d));
-                        }}
-                    />
+                <main className="flex-1 p-2 md:p-6 mb-10 overflow-y-auto custom-scrollbar">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <DealsTable
+                            deals={deals}
+                            userRole={userRole}
+                            onDealUpdated={(id, patch) => {
+                                setDeals(prev => prev.map(d => d.deal_id === id ? { ...d, ...patch } : d));
+                            }}
+                        />
+                    </div>
                 </main>
             </div>
         </ProtectedRoute>

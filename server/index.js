@@ -740,11 +740,12 @@ app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, 
 
         if (req.user.role === 'manager') {
             // Check if deal belongs to manager or their reports
+            // OR if it's currently unassigned (Managers should be able to pick up/assign unassigned leads)
             const ownershipRes = await pool.query(
                 `SELECT 1 FROM users WHERE user_id = $1 AND (user_id = $2 OR manager_id = $2)`,
                 [currentDeal.owner_id, req.user.id]
             );
-            if (ownershipRes.rows.length === 0 && currentDeal.owner_id !== null) {
+            if (currentDeal.owner_id !== null && ownershipRes.rows.length === 0) {
                 return res.status(403).json({ error: 'You can only edit deals belonging to your team' });
             }
         }
@@ -807,12 +808,16 @@ app.patch('/api/deals/:id', authorize(['admin', 'manager', 'rep']), async (req, 
 
         // Log Owner Change
         if (req.body.owner_id && req.body.owner_id !== currentDeal.owner_id) {
+            // Get new owner's email for the log
+            const newUserRes = await pool.query('SELECT email FROM users WHERE user_id = $1', [req.body.owner_id]);
+            const newEmail = newUserRes.rows.length > 0 ? newUserRes.rows[0].email : req.body.owner_id;
+
             await pool.query(
                 `INSERT INTO activities (deal_id, type, content, actor_id, actor_email)
                  VALUES ($1, 'SYSTEM', $2, $3, $4)`,
                 [
                     id,
-                    `Deal reassigned by ${req.user.email}`,
+                    `Deal reassigned by ${req.user.email} -> To: ${newEmail}`,
                     req.user.id,
                     req.user.email
                 ]

@@ -84,7 +84,7 @@ To allow the public to read your files, you need a Bucket Policy.
 ### Option B: AWS CLI (Recommended)
 If you have the AWS CLI configured:
 ```powershell
-aws s3 sync client/out s3://YOUR_BUCKET_NAME --delete
+aws s3 sync out s3://YOUR_BUCKET_NAME --delete
 ```
 
 ---

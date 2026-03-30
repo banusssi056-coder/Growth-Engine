@@ -8,7 +8,7 @@
  * Can optionally trigger a manual recalculation.
  */
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { TrendingUp, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -45,11 +45,11 @@ export function LeadScoreBadge({
         if (!allowRefresh) return;
         setLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}/score`,
-                { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } }
+                { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
             );
             if (res.ok) {
                 const data = await res.json();

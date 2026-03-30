@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import AmplifyConfig from '@/components/auth/AmplifyConfig';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { GlobalSearchProvider } from '@/components/layout/GlobalSearch';
 
@@ -19,17 +20,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <GlobalSearchProvider>
-          <div className="flex h-screen w-screen overflow-hidden bg-slate-100">
-            {/* Sidebar - typically only for authenticated routes, but global for demo */}
-            <Sidebar />
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
-              <main className="flex-1 overflow-y-auto custom-scrollbar">
-                {children}
-              </main>
+        <AmplifyConfig>
+          <GlobalSearchProvider>
+            <div className="flex h-screen w-screen overflow-hidden bg-slate-100">
+              {/* Sidebar - typically only for authenticated routes, but global for demo */}
+              <Sidebar />
+              <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <main className="flex-1 overflow-y-auto custom-scrollbar">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
-        </GlobalSearchProvider>
+          </GlobalSearchProvider>
+        </AmplifyConfig>
       </body>
     </html>
   );

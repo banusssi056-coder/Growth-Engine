@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { X, User, Mail, Phone, Building } from 'lucide-react';
 
 interface CreateContactModalProps {
@@ -27,8 +27,19 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
     }, [isOpen]);
 
     const fetchCompanies = async () => {
-        const { data } = await supabase.from('companies').select('comp_id, name').order('name');
-        if (data) setCompanies(data);
+        try {
+            const token = await getAuthToken();
+            if (!token) return;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/companies`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCompanies(data);
+            }
+        } catch (err) {
+            console.error("Error fetching companies", err);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -36,23 +47,31 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
         setIsSubmitting(true);
 
         try {
-            const { data, error } = await supabase
-                .from('contacts')
-                .insert([
-                    {
-                        first_name: firstName,
-                        last_name: lastName,
-                        email,
-                        phone: phone || null,
-                        job_title: jobTitle || null,
-                        comp_id: compId || null,
-                    }
-                ])
-                .select()
-                .single();
+            const token = await getAuthToken();
+            if (!token) throw new Error('No active session');
 
-            if (error) throw error;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contacts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    first_name: firstName,
+                    last_name: lastName,
+                    email,
+                    phone: phone || null,
+                    job_title: jobTitle || null,
+                    comp_id: compId || null,
+                })
+            });
 
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to create contact');
+            }
+
+            const data = await res.json();
             onSuccess(data);
             handleClose();
         } catch (err: any) {

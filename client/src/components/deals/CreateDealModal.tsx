@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { X } from 'lucide-react';
 import { CURRENCY_CONFIG } from '@/lib/currency';
 
@@ -54,14 +54,15 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
 
     const fetchCompanies = async () => {
         try {
-            const { data, error } = await supabase
-                .from('companies')
-                .select('comp_id, name')
-                .order('name');
+            const token = await getAuthToken();
+            if (!token) return;
 
-            if (error) throw error;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/companies`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
-            if (data) {
+            if (res.ok) {
+                const data = await res.json();
                 setCompanies(data);
                 if (data.length > 0) setCompId(data[0].comp_id);
             }
@@ -75,15 +76,15 @@ export function CreateDealModal({ isOpen, userRole, onClose, onSuccess }: Create
 
         setLoading(true);
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+        const token = await getAuthToken();
+        if (!token) return;
 
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     name,

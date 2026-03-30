@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { X } from 'lucide-react';
 import { CURRENCY_CONFIG } from '@/lib/currency';
 
@@ -24,40 +24,38 @@ export function CreateCompanyModal({ isOpen, onClose, onSuccess }: CreateCompany
         setError(null);
 
         try {
-            // Check if company with same name already exists
-            const { count, error: countError } = await supabase
-                .from("companies")
-                .select("comp_id", { count: 'exact', head: true })
-                .ilike("name", name);
+            const token = await getAuthToken();
+            if (!token) throw new Error('No active session');
 
-            if (countError) throw countError;
-
-            if (count && count > 0) {
-                setError(`Company with name "${name}" already exists.`);
-                setLoading(false);
-                return;
-            }
-
-            const { error } = await supabase.from("companies").insert([
-                {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/companies`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
                     name: name,
                     domain,
                     industry,
                     revenue: revenue ? parseFloat(revenue) : null
-                }
-            ]);
+                })
+            });
 
-            if (error) throw error;
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to create company');
+            }
 
-            onSuccess({ name, domain, industry, revenue });
+            const data = await res.json();
+            onSuccess(data);
             onClose();
             setName('');
             setDomain('');
             setIndustry('');
             setRevenue('');
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError(`Failed to create company: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            setError(err.message || 'Failed to create company');
         } finally {
             setLoading(false);
         }

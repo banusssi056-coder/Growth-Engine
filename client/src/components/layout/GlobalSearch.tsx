@@ -13,7 +13,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import {
     Search, X, User, Building2, Briefcase, Users,
     Loader2, Clock, ChevronRight, Command
@@ -141,13 +141,13 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
         (async () => {
             setLoading(true);
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) return;
+                const token = await getAuthToken();
+                if (!token) return;
 
                 const t0 = performance.now();
                 const res = await fetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/api/search?q=${encodeURIComponent(debouncedQ)}&limit=15`,
-                    { headers: { Authorization: `Bearer ${session.access_token}` } }
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
                 const clientMs = Math.round(performance.now() - t0);
 

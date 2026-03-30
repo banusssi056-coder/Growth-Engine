@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DealsTable } from '@/components/deals/DealsTable';
-import { supabase } from '../../lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { formatCurrency } from '@/lib/currency';
 
@@ -14,26 +14,25 @@ export default function Dashboard() {
 
     useEffect(() => {
         const checkAuthAndFetch = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            const token = await getAuthToken();
 
-            if (!session) {
+            if (!token) {
                 router.push('/login');
                 return;
             }
 
-            const token = session.access_token;
             const headers = {
                 'Authorization': `Bearer ${token}`
             };
 
             // 0. Fetch User Role
-            fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, { headers })
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/me`, { headers })
                 .then(res => res.json())
                 .then(user => setUserRole(user.role))
                 .catch(err => console.error("Failed to fetch user:", err));
 
             // 1. Fetch Deals
-            fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals`, { headers })
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/deals`, { headers })
                 .then(res => {
                     if (res.status === 401 || res.status === 403) {
                         router.push('/login');
@@ -56,7 +55,7 @@ export default function Dashboard() {
                 });
 
             // 2. Fetch Stats
-            fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/stats`, { headers })
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/dashboard/stats`, { headers })
                 .then(res => res.json())
                 .then(data => setStats(data.summary))
                 .catch(err => console.error("Failed to fetch stats", err));

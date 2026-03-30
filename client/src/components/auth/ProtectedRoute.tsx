@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
+import { Hub } from 'aws-amplify/utils';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -11,9 +12,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const user = await getCurrentUser();
+                const session = await fetchAuthSession();
 
-                if (!session) {
+                if (!user || !session.tokens?.idToken) {
                     router.push('/login');
                     return;
                 }
@@ -29,16 +31,20 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
         checkAuth();
 
-        // Listen for auth state changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (!session) {
-                router.push('/login');
-            } else {
-                setIsAuthenticated(true);
+        // Listen for auth state changes using Amplify Hub
+        const unsubscribe = Hub.listen('auth', ({ payload }) => {
+            switch (payload.event) {
+                case 'signedIn':
+                    setIsAuthenticated(true);
+                    break;
+                case 'signedOut':
+                    setIsAuthenticated(false);
+                    router.push('/login');
+                    break;
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => unsubscribe();
     }, [router]);
 
     if (isLoading) {
@@ -46,7 +52,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
                 <div className="text-center">
                     <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-emerald-600 border-r-transparent"></div>
-                    <p className="mt-4 text-slate-600">Verifying authentication...</p>
+                    <p className="mt-4 text-slate-600">Verifying authentication (Cognito)...</p>
                 </div>
             </div>
         );

@@ -1,24 +1,18 @@
 'use client';
-
-import { supabase } from '../../lib/supabase';
+import { signInWithRedirect } from 'aws-amplify/auth';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
-    const router = useRouter();
 
     const handleGoogleLogin = async () => {
         try {
             setLoading(true);
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/dashboard`, // Redirect to dashboard after login
-                },
+            await signInWithRedirect({
+                provider: 'Google'
             });
-            if (error) throw error;
         } catch (error: any) {
+            console.error('Error logging in:', error);
             alert('Error logging in: ' + error.message);
         } finally {
             setLoading(false);
@@ -61,7 +55,7 @@ export default function LoginPage() {
                                 />
                             </svg>
                         </span>
-                        {loading ? 'Connecting...' : 'Sign in with Google'}
+                        {loading ? 'Redirecting...' : 'Sign in with Google'}
                     </button>
                 </div>
             </div>

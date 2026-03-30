@@ -10,7 +10,7 @@
  * after the background job fires.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { Bell, X, AlertTriangle, Snowflake, Workflow, Info, CheckCheck, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -52,11 +52,11 @@ export function NotificationBell() {
 
     const fetchNotifications = useCallback(async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/notifications`,
-                { headers: { Authorization: `Bearer ${session.access_token}` } }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             if (!res.ok) return;
             const data = await res.json();
@@ -85,11 +85,11 @@ export function NotificationBell() {
 
     const markRead = async (id: string) => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${id}/read`, {
                 method: 'PATCH',
-                headers: { Authorization: `Bearer ${session.access_token}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(ns => ns.map(n => n.notif_id === id ? { ...n, is_read: true } : n));
             setUnread(u => Math.max(0, u - 1));
@@ -99,11 +99,11 @@ export function NotificationBell() {
     const markAllRead = async () => {
         setMarking(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, {
                 method: 'PATCH',
-                headers: { Authorization: `Bearer ${session.access_token}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(ns => ns.map(n => ({ ...n, is_read: true })));
             setUnread(0);

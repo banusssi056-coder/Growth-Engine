@@ -1,6 +1,7 @@
 // Trigger redeploy for contacts fix
 'use client';
 import { useState, useEffect } from 'react';
+import { getAuthToken } from '@/lib/auth-utils';
 import { supabase } from '@/lib/supabase';
 import { Plus, Building, User, Mail, Phone, Trash2 } from 'lucide-react';
 import { CreateCompanyModal } from '@/components/contacts/CreateCompanyModal';
@@ -17,20 +18,25 @@ export default function Contacts() {
     const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
     useEffect(() => {
-        fetchUser();
-        if (activeTab === 'companies') {
-            fetchCompanies();
-        } else {
-            fetchContacts();
-        }
+        const load = async () => {
+            const token = await getAuthToken();
+            if (!token) return;
+            fetchUser();
+            if (activeTab === 'companies') {
+                fetchCompanies();
+            } else {
+                fetchContacts();
+            }
+        };
+        load();
     }, [activeTab]);
 
     const fetchUser = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
+            const token = await getAuthToken();
+            if (token) {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-                    headers: { Authorization: `Bearer ${session.access_token}` }
+                    headers: { Authorization: `Bearer ${token}` }
                 });
                 if (res.ok) {
                     const user = await res.json();
@@ -45,12 +51,15 @@ export default function Contacts() {
     const fetchCompanies = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('companies')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const token = await getAuthToken();
+            if (!token) return;
 
-            if (error) throw error;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/companies`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error('Failed to fetch companies');
+            const data = await res.json();
             setCompanies(data || []);
         } catch (err) {
             console.error("Error loading companies", err);
@@ -62,15 +71,15 @@ export default function Contacts() {
     const fetchContacts = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('contacts')
-                .select(`
-                    *,
-                    companies (name)
-                `)
-                .order('created_at', { ascending: false });
+            const token = await getAuthToken();
+            if (!token) return;
 
-            if (error) throw error;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contacts`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error('Failed to fetch contacts');
+            const data = await res.json();
             setContacts(data || []);
         } catch (err) {
             console.error("Error loading contacts", err);
@@ -82,8 +91,19 @@ export default function Contacts() {
     const handleDeleteContact = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete contact "${name}"?`)) return;
         try {
-            const { error } = await supabase.from('contacts').delete().eq('cont_id', id);
-            if (error) throw error;
+            const token = await getAuthToken();
+            if (!token) return;
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contacts/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to delete contact');
+            }
+
             setContacts(prev => prev.filter(c => c.cont_id !== id));
         } catch (err: any) {
             alert(err.message);
@@ -93,8 +113,19 @@ export default function Contacts() {
     const handleDeleteCompany = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete "${name}"? This will also remove associated deals and contacts.`)) return;
         try {
-            const { error } = await supabase.from('companies').delete().eq('comp_id', id);
-            if (error) throw error;
+            const token = await getAuthToken();
+            if (!token) return;
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/companies/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to delete company');
+            }
+
             setCompanies(prev => prev.filter(c => c.comp_id !== id));
         } catch (err: any) {
             alert(err.message);

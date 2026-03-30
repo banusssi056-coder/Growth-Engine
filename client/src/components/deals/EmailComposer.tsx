@@ -15,7 +15,7 @@
  *   onClose  – called when the composer is dismissed
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import {
     Mail, X, Eye, EyeOff, ChevronDown, Send, Loader2,
     CheckCircle2, MousePointerClick, TrendingUp, Clock, Copy
@@ -70,8 +70,7 @@ export function EmailComposer({ dealId, contId, toEmail = '', onClose }: Props) 
     const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const getToken = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session?.access_token ?? null;
+        return await getAuthToken();
     };
 
     // Load available template variables from API

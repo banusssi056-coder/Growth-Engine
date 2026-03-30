@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { Board } from '@/components/kanban/Board';
 import { DealsTable } from '@/components/deals/DealsTable';
 import { Plus, LayoutGrid, List, RefreshCw } from 'lucide-react';
@@ -27,17 +27,20 @@ export default function Deals() {
         else setRefreshing(true);
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) {
+                console.error('[Deals] No auth token found');
+                return;
+            }
 
-            tokenRef.current = session.access_token;
+            tokenRef.current = token;
 
             const [meRes, dealsRes] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-                    headers: { Authorization: `Bearer ${session.access_token}` }
+                fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/me`, {
+                    headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals`, {
-                    headers: { Authorization: `Bearer ${session.access_token}` }
+                fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/deals`, {
+                    headers: { Authorization: `Bearer ${token}` }
                 }),
             ]);
 
@@ -63,16 +66,13 @@ export default function Deals() {
     useEffect(() => { fetchDeals(); }, [fetchDeals]);
 
     // ── Re-fetch server data every time the user switches view ───────────────
-    // This is the key fix: even if a child component forgot to call onDealUpdated,
-    // we always re-seed from the server when the view toggles.
     const handleViewChange = useCallback((mode: 'board' | 'list') => {
         if (mode === viewMode) return;
         setViewMode(mode);
-        fetchDeals(true); // silent = true → shows spinner in refresh icon only
+        fetchDeals(true); 
     }, [viewMode, fetchDeals]);
 
     // ── Callback children call after saving a stage/field change ────────────
-    // Keeps parent state in sync so switching views doesn't discard local edits.
     const handleDealUpdated = useCallback((dealId: string, patch: Partial<any>) => {
         setDeals(prev =>
             prev.map(d => d.deal_id === dealId ? { ...d, ...patch } : d)
@@ -97,13 +97,11 @@ export default function Deals() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Refresh indicator */}
                         <RefreshCw
                             size={15}
                             className={`text-slate-400 transition-transform ${refreshing ? 'animate-spin' : 'opacity-0'}`}
                         />
 
-                        {/* View toggle */}
                         <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                             <button
                                 onClick={() => handleViewChange('list')}
@@ -121,7 +119,6 @@ export default function Deals() {
                             </button>
                         </div>
 
-                        {/* Remove intern restriction to allow lead creation as per SRS */}
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
                             className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
@@ -132,7 +129,6 @@ export default function Deals() {
                     </div>
                 </div>
 
-                {/* ── Content ─────────────────────────────────────────────── */}
                 <div className="flex-1 overflow-hidden bg-white">
                     {viewMode === 'board' ? (
                         <Board

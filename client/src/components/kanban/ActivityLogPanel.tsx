@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '../../lib/auth-utils';
 import { X, ArrowRightLeft, MessageSquare, Phone, Mail, Users, CheckCircle2, Loader2, Eye, MousePointerClick, Send } from 'lucide-react';
 import { EmailComposer } from '@/components/deals/EmailComposer';
 import { LeadScoreBadge } from '@/components/deals/LeadScoreBadge';
@@ -55,11 +55,11 @@ export function ActivityLogPanel({ dealId, dealName, score = 0, onClose }: Activ
 
     const fetchActivities = useCallback(async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}/activities`,
-                { headers: { Authorization: `Bearer ${session.access_token}` } }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             if (res.ok) setActivities(await res.json());
         } catch (e) {
@@ -77,13 +77,13 @@ export function ActivityLogPanel({ dealId, dealName, score = 0, onClose }: Activ
         setSaving(true);
         setError(null);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/activities`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session.access_token}`
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({ deal_id: dealId, type: 'NOTE', content })
             });

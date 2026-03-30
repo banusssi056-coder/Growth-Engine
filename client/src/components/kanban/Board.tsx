@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { getAuthToken } from '../../lib/auth-utils';
 import {
     DndContext, closestCorners, KeyboardSensor, PointerSensor,
     useSensor, useSensors, DragOverlay, defaultDropAnimationSideEffects,
@@ -58,10 +59,10 @@ export function Board({ initialDeals, userRole, userId, onDealUpdated }: BoardPr
     // Fetch stages from DB (FR-B.1 customizable stages)
     const fetchStages = useCallback(async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stages`, {
-                headers: { Authorization: `Bearer ${session.access_token}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
                 const data: StageConfig[] = await res.json();
@@ -159,8 +160,8 @@ export function Board({ initialDeals, userRole, userId, onDealUpdated }: BoardPr
         if (activeContainer !== startContainer) {
             console.log(`[Board] Persistence Loop: ${startContainer} -> ${activeContainer} (id: ${active.id})`);
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) { console.error('[Board] No session'); return; }
+                const token = await getAuthToken();
+                if (!token) { console.error('[Board] No session'); return; }
 
                 const prob = stageProbability[activeContainer] ?? 10;
                 console.log(`[Board] PATCH /api/deals/${active.id} payload:`, { stage: activeContainer, probability: prob });
@@ -171,7 +172,7 @@ export function Board({ initialDeals, userRole, userId, onDealUpdated }: BoardPr
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
+                            'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify({
                             stage: activeContainer,

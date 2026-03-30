@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { useRouter } from 'next/navigation';
 import { Download, Shield, ShieldAlert, Check, X, Layers, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,10 +32,10 @@ export default function Settings() {
 
     const fetchMyRole = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-                headers: { Authorization: `Bearer ${session.access_token}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) { const me = await res.json(); setUserRole(me.role); }
         } catch { /* ignore */ }
@@ -43,16 +43,14 @@ export default function Settings() {
 
     const fetchUsers = async () => {
         try {
-            const { data, error } = await supabase
-                .from('users')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            if (data) {
-                setUsers(data);
-            }
+            const token = await getAuthToken();
+            if (!token) return;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error("Failed to fetch users");
+            const data = await res.json();
+            setUsers(data);
         } catch (err) {
             console.error("Error loading users", err);
             alert(`Failed to load users: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -62,15 +60,15 @@ export default function Settings() {
     };
 
     const handleRoleChange = async (userId: string, newRole: string) => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
+        const token = await getAuthToken();
+        if (!token) return;
+ 
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ role: newRole })
             });
@@ -83,19 +81,19 @@ export default function Settings() {
     };
 
     const handleManagerChange = async (userId: string, newManagerId: string) => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
+        const token = await getAuthToken();
+        if (!token) return;
+ 
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ manager_id: newManagerId || null })
             });
-
+ 
             if (res.ok) {
                 setUsers(users.map(user => user.user_id === userId ? { ...user, manager_id: newManagerId } : user));
             } else {
@@ -109,15 +107,15 @@ export default function Settings() {
     }
 
     const toggleStatus = async (userId: string, currentStatus: boolean) => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
+        const token = await getAuthToken();
+        if (!token) return;
+ 
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ is_active: !currentStatus })
             });
@@ -130,19 +128,19 @@ export default function Settings() {
     };
 
     const handleWeightChange = async (userId: string, weight: number) => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
+        const token = await getAuthToken();
+        if (!token) return;
+ 
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ assignment_weight: weight })
             });
-
+ 
             if (res.ok) {
                 setUsers(users.map(u => u.user_id === userId ? { ...u, assignment_weight: weight } : u));
             }
@@ -153,14 +151,14 @@ export default function Settings() {
 
     const handleExport = async () => {
         setExporting(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
+        const token = await getAuthToken();
+        if (!token) return;
+ 
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/export/deals`, {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
+ 
             if (res.ok) {
                 const blob = await res.blob();
                 const url = window.URL.createObjectURL(blob);

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { formatCurrency } from '@/lib/currency';
 import { TrendingUp, Users, DollarSign, CheckCircle } from 'lucide-react';
@@ -13,15 +13,15 @@ export default function PerformancePage() {
 
     useEffect(() => {
         const fetchAnalytics = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
+            const token = await getAuthToken();
+            if (!token) {
                 router.push('/login');
                 return;
             }
 
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analytics/team`, {
-                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!res.ok) throw new Error("Failed to fetch analytics");
                 const data = await res.json();

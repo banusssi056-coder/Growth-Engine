@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import { formatCurrency } from '@/lib/currency';
 import { LeadScoreBadge } from './LeadScoreBadge';
 
@@ -72,10 +72,10 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
 
     const fetchTeamMembers = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/team`, {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
             if (Array.isArray(data)) setTeamMembers(data);
@@ -96,14 +96,14 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
         );
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
 
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 // Send both stage AND probability so weighted forecast recalculates on the server
                 body: JSON.stringify({ stage: newStage, probability: newProbability })
@@ -128,14 +128,14 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
         );
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
 
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ owner_id: newOwnerId })
             });
@@ -153,14 +153,14 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
         );
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
 
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ next_follow_up: value || null })
             });
@@ -177,14 +177,14 @@ export function DealsTable({ deals, userRole, userId, onDealUpdated }: DealsTabl
 
     const handleRemarkBlur = async (dealId: string, value: string) => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAuthToken();
+            if (!token) return;
 
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/deals/${dealId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ remark: value })
             });

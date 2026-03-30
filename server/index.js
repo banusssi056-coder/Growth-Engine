@@ -28,6 +28,11 @@ let pool;
 
 const startServer = async () => {
     let connectionString = rawUrl;
+    // Prepend protocol if missing to support "host:port/db" format
+    if (!connectionString.includes('://')) {
+        connectionString = 'postgresql://' + connectionString;
+    }
+
 
     // FIX: Explicitly resolve hostname to IPv4 to prevent ENETUNREACH on IPv6-only environments (like Render)
     try {
@@ -59,9 +64,14 @@ const startServer = async () => {
         console.warn('[DNS] Setup Error:', err.message);
     }
 
+    const isSupabase = rawUrl.includes('supabase.co');
+    const isRDS = rawUrl.includes('rds.amazonaws.com');
+    
     const poolConfig = {
         connectionString,
-        ssl: rawUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false
+        ssl: (isSupabase || isRDS || process.env.DB_SSL === 'true') 
+            ? { rejectUnauthorized: false } 
+            : false
     };
 
     pool = new Pool(poolConfig);
@@ -524,6 +534,74 @@ app.get('/api/companies', authorize(['admin', 'manager', 'rep', 'intern']), asyn
         res.json(result.rows);
     } catch (err) {
         console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// FR-A.1: Contacts API (to replace direct Supabase calls)
+app.get('/api/contacts', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT c.*, co.name as company_name 
+            FROM contacts c 
+            LEFT JOIN companies co ON c.comp_id = co.comp_id 
+            ORDER BY c.created_at DESC LIMIT 100
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('[Contacts] GET error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/contacts', authorize(['admin', 'manager', 'rep', 'intern']), async (req, res) => {
+    const { first_name, last_name, email, phone, job_title, comp_id } = req.body;
+    if (!first_name || !last_name || !email) {
+        return res.status(400).json({ error: 'First name, last name, and email are required' });
+    }
+    try {
+        const result = await pool.query(
+            `INSERT INTO contacts (first_name, last_name, email, phone, job_title, comp_id) 
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            [first_name, last_name, email, phone || null, job_title || null, comp_id || null]
+        );
+        const newContact = result.rows[0];
+        await req.audit('CREATE', 'CONTACT', newContact.cont_id, null, newContact);
+        res.status(201).json(newContact);
+    } catch (err) {
+        if (err.code === '23505') return res.status(400).json({ error: 'A contact with this email already exists' });
+        console.error('[Contacts] POST error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/contacts/:id', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const oldRes = await pool.query('SELECT * FROM contacts WHERE cont_id = $1', [id]);
+        if (oldRes.rows.length === 0) return res.status(404).json({ error: 'Contact not found' });
+        
+        await pool.query('DELETE FROM contacts WHERE cont_id = $1', [id]);
+        await req.audit('DELETE', 'CONTACT', id, oldRes.rows[0], null);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Contacts] DELETE error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/companies/:id', authorize(['admin', 'manager', 'rep']), async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Prevent deleting a company that still has deals (unless cascading, but let's be safe)
+        const oldRes = await pool.query('SELECT * FROM companies WHERE comp_id = $1', [id]);
+        if (oldRes.rows.length === 0) return res.status(404).json({ error: 'Company not found' });
+
+        await pool.query('DELETE FROM companies WHERE comp_id = $1', [id]);
+        await req.audit('DELETE', 'COMPANY', id, oldRes.rows[0], null);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Companies] DELETE error:', err);
         res.status(500).json({ error: err.message });
     }
 });

@@ -1,9 +1,13 @@
 const { Pool } = require('pg');
-
-// Mock Auth Middleware for Dev/Prototype
-// In production, this would verify a JWT from an SSO provider (e.g. Auth0, Google)
-const supabase = require('../lib/supabase');
+const { CognitoJwtVerifier } = require("aws-jwt-verify");
 const { syncUser } = require('../services/userService');
+
+// Configure Cognito Verifier
+const verifier = CognitoJwtVerifier.create({
+    userPoolId: process.env.COGNITO_USER_POOL_ID,
+    tokenUse: "id",
+    clientId: process.env.COGNITO_CLIENT_ID,
+});
 
 const authenticate = async (req, res, next) => {
     // Inject pool from app or request if attached, but middleware standard signature doesn't have it easily.
@@ -12,46 +16,43 @@ const authenticate = async (req, res, next) => {
     // Pattern fix: We'll modify authentication to accept pool or attach pool to (req) in index.js.
     // For now, let's assume `req.pool` exists (we will add it in index.js) OR we import it if it was a singleton.
     // Looking at index.js, pool is created there. Best practice: attach pool to req.
-
     const authHeader = req.headers.authorization;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
-        console.log('[Auth] Verifying token...');
-        const { data: { user }, error } = await supabase.auth.getUser(token);
+        console.log('[Auth] Verifying Cognito token...');
+        
+        try {
+            const payload = await verifier.verify(token);
+            console.log('[Auth] Token verified for:', payload.email);
 
-        if (error) {
-            console.error('[Auth] Supabase Error:', error.message);
-        }
+            if (!req.db) throw new Error("Database connection pool missing from request");
 
-        if (!error && user) {
-            // Sync with local DB to get Role
-            try {
-                if (!req.db) throw new Error("Database connection pool missing from request");
-                if (!user.email) throw new Error("User email missing from Supabase token");
+            // Sync with local DB
+            const cognitoUser = {
+                id: payload.sub,
+                email: payload.email,
+                full_name: payload.name || payload['custom:full_name'] || payload.email,
+                avatar_url: payload.picture || null
+            };
 
-                console.log(`[Auth] Syncing user: ${user.email}`);
-                const dbUser = await syncUser(req.db, user);
+            const dbUser = await syncUser(req.db, cognitoUser);
 
-                // Return full user profile
-                req.user = {
-                    id: dbUser.user_id, // Local DB ID
-                    supabase_id: user.id,
-                    email: dbUser.email,
-                    full_name: dbUser.full_name,
-                    avatar_url: dbUser.avatar_url,
-                    phone: dbUser.phone,
-                    department: dbUser.department,
-                    role: dbUser.role,
-                    is_active: dbUser.is_active
-                };
-                return next();
-            } catch (err) {
-                console.error("[Auth] Sync Error", err);
-                return res.status(500).json({ error: `Auth Error: ${err.message}` });
-            }
-        } else {
-            console.warn('[Auth] No user found for token or error occurred');
+            req.user = {
+                id: dbUser.user_id, // Local DB ID
+                cognito_id: payload.sub,
+                email: dbUser.email,
+                full_name: dbUser.full_name,
+                avatar_url: dbUser.avatar_url,
+                phone: dbUser.phone,
+                department: dbUser.department,
+                role: dbUser.role,
+                is_active: dbUser.is_active
+            };
+            return next();
+
+        } catch (err) {
+            console.error('[Auth] Verification failed:', err.message);
         }
     } else {
         console.log('[Auth] No Bearer token found');

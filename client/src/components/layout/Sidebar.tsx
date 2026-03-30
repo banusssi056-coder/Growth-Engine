@@ -3,7 +3,8 @@ import { BarChart3, Users, Briefcase, Settings, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { signOut, fetchAuthSession } from 'aws-amplify/auth';
+import { Hub } from 'aws-amplify/utils';
 import { cn } from '@/lib/utils';
 import { SearchTriggerButton } from './GlobalSearch';
 import { NotificationBell } from './NotificationBell';
@@ -19,39 +20,34 @@ const NAV_ITEMS = [
 export function Sidebar() {
     const pathname = usePathname();
     const [user, setUser] = useState<any>(null);
-    const [searchOpen, setSearchOpen] = useState(false);
     const router = useRouter();
 
 
     const fetchUser = async () => {
         try {
-            // Get the authenticated user
-            const { data: { user } } = await supabase.auth.getUser();
+            // Get the Cognito session
+            const session = await fetchAuthSession();
+            const token = session.tokens?.idToken?.toString();
 
-            if (!user) {
+            if (!token) {
                 setUser(null);
                 return;
             }
 
-            // Fetch the user profile from the users table
-            const { data: profile, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('user_id', user.id)
-                .single();
+            // Fetch the user profile from our own API
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/me`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-            if (error) {
-                console.error('Error fetching user profile:', error);
-                // Fallback to basic user data from auth
-                setUser({
-                    user_id: user.id,
-                    email: user.email,
-                    full_name: user.email?.split('@')[0],
-                    role: 'rep'
-                });
-            } else {
-                setUser(profile);
+            if (!response.ok) {
+                console.error('Error fetching user profile:', response.statusText);
+                return;
             }
+
+            const profile = await response.json();
+            setUser(profile);
         } catch (err) {
             console.error("Error fetching user profile", err);
         }
@@ -61,20 +57,20 @@ export function Sidebar() {
         // Initial check
         fetchUser();
 
-        // Listen for changes (Sign In / Sign Out)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session) {
+        // Listen for changes using Amplify Hub
+        const unsubscribe = Hub.listen('auth', ({ payload }) => {
+            if (payload.event === 'signedIn') {
                 fetchUser();
-            } else {
+            } else if (payload.event === 'signedOut') {
                 setUser(null);
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => unsubscribe();
     }, []);
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut();
+        await signOut();
         router.push('/login');
     };
 

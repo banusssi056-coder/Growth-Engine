@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import {
     GripVertical, Plus, Pencil, Trash2, Check, X,
     Loader2, AlertTriangle, ChevronUp, ChevronDown
@@ -44,8 +44,7 @@ export function StageManager() {
     const [adding, setAdding] = useState(false);
 
     const getToken = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session?.access_token ?? null;
+        return await getAuthToken();
     };
 
     const fetchStages = useCallback(async () => {

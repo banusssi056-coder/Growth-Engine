@@ -12,7 +12,7 @@
  *  • Dry-run test to see how many existing deals would match
  */
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthToken } from '@/lib/auth-utils';
 import {
     Plus, Trash2, Zap, CheckCircle2, XCircle,
     Loader2, FlaskConical, ChevronDown, ChevronRight
@@ -110,18 +110,17 @@ export function WorkflowBuilder() {
     const [error, setError] = useState<string | null>(null);
     const [expandedRule, setExpandedRule] = useState<string | null>(null);
 
-    const getSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session;
+    const getToken = async () => {
+        return await getAuthToken();
     };
 
     const fetchRules = useCallback(async () => {
         setLoading(true);
         try {
-            const session = await getSession();
-            if (!session) return;
+            const token = await getToken();
+            if (!token) return;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/workflow-rules`, {
-                headers: { Authorization: `Bearer ${session.access_token}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) setRules(await res.json());
         } catch { /* silent */ }
@@ -131,24 +130,24 @@ export function WorkflowBuilder() {
     useEffect(() => { fetchRules(); }, [fetchRules]);
 
     const handleToggle = async (rule: WorkflowRule) => {
-        const session = await getSession();
-        if (!session) return;
+        const token = await getToken();
+        if (!token) return;
         const updated = { ...rule, is_active: !rule.is_active };
         setRules(rs => rs.map(r => r.rule_id === rule.rule_id ? updated : r));
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/workflow-rules/${rule.rule_id}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ is_active: !rule.is_active })
         });
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Delete this workflow rule?')) return;
-        const session = await getSession();
-        if (!session) return;
+        const token = await getToken();
+        if (!token) return;
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/workflow-rules/${id}`, {
             method: 'DELETE',
-            headers: { Authorization: `Bearer ${session.access_token}` }
+            headers: { Authorization: `Bearer ${token}` }
         });
         setRules(rs => rs.filter(r => r.rule_id !== id));
     };
@@ -157,11 +156,11 @@ export function WorkflowBuilder() {
         setTesting(true);
         setTestResult(null);
         try {
-            const session = await getSession();
-            if (!session) return;
+            const token = await getToken();
+            if (!token) return;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/workflow-rules/test`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
                     trigger_field: form.trigger_field,
                     trigger_op: form.trigger_op,
@@ -179,11 +178,11 @@ export function WorkflowBuilder() {
         setSaving(true);
         setError(null);
         try {
-            const session = await getSession();
-            if (!session) return;
+            const token = await getToken();
+            if (!token) return;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/workflow-rules`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(form)
             });
             if (!res.ok) { const d = await res.json(); throw new Error(d.error); }

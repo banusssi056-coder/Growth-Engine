@@ -10,10 +10,32 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
+        // If Cognito redirected back with an OAuth error (e.g. phone_number required),
+        // bail out immediately instead of hanging on auth check.
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const errorDesc = params.get('error_description') || params.get('error');
+            if (errorDesc) {
+                console.error('OAuth error detected in URL:', decodeURIComponent(errorDesc));
+                router.push('/login?error=' + encodeURIComponent(decodeURIComponent(errorDesc)));
+                return;
+            }
+        }
+
         const checkAuth = async () => {
             try {
-                const user = await getCurrentUser();
-                const session = await fetchAuthSession();
+                // Timeout after 10 seconds to avoid indefinite loading
+                const authPromise = (async () => {
+                    const user = await getCurrentUser();
+                    const session = await fetchAuthSession();
+                    return { user, session };
+                })();
+
+                const timeoutPromise = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('Auth check timed out')), 10000)
+                );
+
+                const { user, session } = await Promise.race([authPromise, timeoutPromise]);
 
                 if (!user || !session.tokens?.idToken) {
                     router.push('/login');
